@@ -22,6 +22,8 @@ OVERRIDES = {
         "category": "class", "passage": "1 John",
     },
     "20251228LBCSS1John": {"passage": "1 John"},  # the published Review — book-level main text
+    # Open-air preaching that aired on the podcast — file by content type.
+    "BAB 006 Homosexual Pride Parade Preaching June 2019": {"category": "open_air"},
     "BAB 074 Hunger and Thirst": {
         "passage": "Matthew 5:6",
         # context-targeted (don't touch "Matthew 5, 6, and 7" earlier in the transcript)

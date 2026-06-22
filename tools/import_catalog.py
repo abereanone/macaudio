@@ -40,8 +40,15 @@ COLLECTION_NORMALIZE = {
     "Communion Message": "Communion Message",
     "Communion Messages": "Communion Message",
     "Communion Messages at CBC": "Communion Message",
-    "BAB": "Be a Berean podcast",
     "1 Peter at CovenantBibleOhio.com": "1 Peter",
+}
+
+# Category = content TYPE, not distribution channel. A few series aired via the
+# Be A Berean podcast feed but are really sermons / a conference; file them by
+# content type so they show under the right pill (collection name -> category).
+SERIES_CATEGORY = {
+    "Hebrews": "sermon",
+    "FCA Retreat 2019": "conference",
 }
 
 REPO = Path(__file__).resolve().parent.parent
@@ -56,7 +63,10 @@ MICHAEL_ONLY = True  # this is Michael's audio site — exclude items he didn't 
 # True dups are within seconds; a sermon vs its communion message on the same day
 # differ by 20-40 min, so this comfortably separates them.
 DUP_DURATION_TOL = 120
-GENERIC_ALBUMS = {"", "covenant bible church", "covenantbibleohio.com", "lbc"}
+# Album tags that aren't real series. "bab"/"be a berean podcast"/"open air
+# preaching" just restate a category pill, so they must NOT become collections.
+GENERIC_ALBUMS = {"", "covenant bible church", "covenantbibleohio.com", "lbc",
+                  "bab", "be a berean podcast", "open air preaching"}
 # ID3 artist values that aren't real people (recorder/software defaults).
 BAD_ARTIST = re.compile(r"freeswitch|mod_conference|my recording|untitled|^track ?\d|^unknown", re.I)
 
@@ -286,6 +296,9 @@ def main() -> None:
                     passage_ref = ov["passage"]
             if collection:
                 collection = COLLECTION_NORMALIZE.get(collection, collection)
+            # Re-file podcast-distributed series to their true content type.
+            if collection in SERIES_CATEGORY:
+                cat = SERIES_CATEGORY[collection]
             # Michael's site only: exclude items he didn't speak (reversible — just not in the catalog)
             if MICHAEL_ONLY and "michael coughlin" not in (speaker or "").lower():
                 excluded.append({"path": str(f), "speaker": speaker, "title": title})
