@@ -1,0 +1,27 @@
+name = "macaudio"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./dist"
+
+# --- D1: catalog + transcripts ----------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "macaudio-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"   # `wrangler d1 create macaudio-db`
+migrations_dir = "db/migrations"
+
+# --- R2: audio files --------------------------------------------------------
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "macaudio"                       # `wrangler r2 bucket create macaudio`
+
+# --- KV: required by the Astro Cloudflare adapter for SSR sessions ----------
+[[kv_namespaces]]
+binding = "SESSION"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+SITE_NAME = "Michael Coughlin — Audio"
+SITE_SHORT_NAME = "MC Audio"
+SITE_URL = "https://audio.michaelcoughlin.net"
+MEDIA_BASE_URL = "https://media.audio.michaelcoughlin.net"   # R2 public custom domain

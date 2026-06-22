@@ -1,0 +1,33 @@
+# build output
+dist/
+.astro/
+
+# deps
+node_modules/
+
+# cloudflare
+.wrangler/
+.dev.vars
+.dev.vars.*
+
+# env / secrets
+.env
+.env.*
+*.local
+
+# local-only working data
+_temp/
+db/import.sql
+tools/audio_manifest.csv
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+tools/deduped_report.txt
+tools/delete_dupes.bat
+tools/dup_report.txt
+tools/nonmichael_report.txt
+tools/delete_nonmichael.bat

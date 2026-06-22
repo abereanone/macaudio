@@ -1,0 +1,47 @@
+---
+import ThemeToggle from "./ThemeToggle.astro";
+const path = Astro.url.pathname;
+const env = Astro.locals.runtime?.env ?? {};
+const siteName = env.SITE_NAME ?? "Michael Coughlin — Audio";
+const links = [
+  { href: "/listen", label: "Browse" },
+  { href: "/scripture", label: "Scripture" },
+  { href: "/about", label: "About" },
+];
+---
+<header class="site-header">
+  <div class="container nav">
+    <a href="/" class="brand">
+      <span class="brand-mark">MC</span>
+      <span class="brand-name">{siteName}</span>
+    </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+    <label for="nav-toggle" class="nav-burger" aria-label="Menu"><span></span><span></span><span></span></label>
+    <nav class="nav-links" aria-label="Primary">
+      {links.map((l) => <a href={l.href} class={path === l.href || (l.href !== "/" && path.startsWith(l.href)) ? "active" : ""}>{l.label}</a>)}
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header { position: sticky; top: 0; z-index: 50; background: var(--header-bg); backdrop-filter: saturate(160%) blur(10px); border-bottom: 1px solid var(--border); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .brand:hover { text-decoration: none; }
+  .brand-mark { background: var(--brand); color: #07121a; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: .85rem; }
+  .brand-name { color: var(--text); font-family: var(--serif); font-size: 1.02rem; }
+  .nav-links { display: flex; align-items: center; gap: 18px; }
+  .nav-links a { color: var(--text-soft); font-weight: 500; font-size: 0.95rem; }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); text-decoration: none; }
+  .nav-links a.active { color: var(--brand); }
+  .nav-burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; }
+  .nav-burger span { width: 22px; height: 2px; background: var(--text); display: block; }
+  @media (max-width: 760px) {
+    .brand-name { display: none; }
+    .nav-burger { display: flex; }
+    .nav-links { position: absolute; top: 62px; left: 0; right: 0; flex-direction: column; align-items: flex-start; gap: 4px; background: var(--bg); border-bottom: 1px solid var(--border); padding: 14px 22px; display: none; }
+    .nav-toggle:checked ~ .nav-links { display: flex; }
+    .nav-links a { padding: 8px 0; width: 100%; }
+  }
+</style>

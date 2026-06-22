@@ -1,0 +1,68 @@
+---
+import Base from "../layouts/Base.astro";
+import { getDB, all, one } from "@lib/db";
+import { CATEGORIES, CATEGORY_LABEL, fmtDate } from "@lib/catalog";
+
+const db = getDB(Astro.locals);
+const recent = await all<{ slug: string; title: string; category: string; speaker_name: string; recorded_on: string; passage_ref: string }>(
+  db,
+  `SELECT i.slug, i.title, i.category, sp.name AS speaker_name, i.recorded_on, i.passage_ref
+   FROM items i LEFT JOIN speakers sp ON sp.id=i.speaker_id
+   WHERE i.published=1 ORDER BY i.recorded_on DESC, i.id DESC LIMIT 8`
+);
+const total = (await one<{ n: number }>(db, `SELECT COUNT(*) n FROM items WHERE published=1`))?.n ?? 0;
+const catCounts = await all<{ category: string; n: number }>(db, `SELECT category, COUNT(*) n FROM items WHERE published=1 GROUP BY category`);
+const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
+---
+<Base description="Sermons, classes, conferences, and open-air preaching by Michael Coughlin — with full transcripts and a scripture index.">
+  <section class="hero">
+    <div class="container">
+      <h1 style="max-width:18ch">Preaching &amp; teaching, with full transcripts</h1>
+      <p class="muted" style="max-width:60ch;font-size:1.05rem">Sermons, Sunday classes, conference messages, open-air preaching, and the <em>Be A Berean</em> podcast — searchable, transcribed, and indexed by scripture.</p>
+      <form method="GET" action="/listen" class="hero-search">
+        <input name="q" placeholder="Search titles, speakers, passages, or anything said…" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+      <div class="cats">
+        {CATEGORIES.map((c) => countOf(c.key) > 0 && (
+          <a class="cat" href={`/listen?category=${c.key}`}>{c.label} <span class="muted">{countOf(c.key)}</span></a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="head"><h2 style="margin:0">Latest</h2><a class="muted" href="/listen">Browse all {total} →</a></div>
+    {recent.length === 0 ? (
+      <p class="muted">Nothing published yet — the library is being prepared.</p>
+    ) : (
+      <div class="list">
+        {recent.map((it) => (
+          <a class="card row" href={`/listen/${it.slug}`}>
+            <div>
+              <span class="badge badge-cat">{CATEGORY_LABEL[it.category] ?? it.category}</span>
+              <h3 style="margin:6px 0 2px">{it.title}</h3>
+              {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
+              <p class="muted" style="margin:2px 0 0">{it.speaker_name}</p>
+            </div>
+            <span class="muted dt">{fmtDate(it.recorded_on)}</span>
+          </a>
+        ))}
+      </div>
+    )}
+  </section>
+</Base>
+
+<style>
+  .hero-search { display: flex; gap: 10px; margin: 22px 0 18px; max-width: 620px; flex-wrap: wrap; }
+  .hero-search input { flex: 1; min-width: 220px; }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat { padding: 6px 13px; border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: .9rem; font-weight: 500; background: var(--bg-card); }
+  .cat:hover { border-color: var(--brand-300); text-decoration: none; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .row:hover { text-decoration: none; border-color: var(--brand-300); }
+  .passage-tag { display: inline-block; font-family: var(--serif); color: var(--brand); font-weight: 600; font-size: .95rem; }
+  .dt { white-space: nowrap; font-size: .88rem; }
+</style>

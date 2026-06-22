@@ -1,0 +1,93 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDB, all } from "@lib/db";
+import { fmtDate } from "@lib/catalog";
+
+const db = getDB(Astro.locals);
+const selectedBook = (Astro.url.searchParams.get("book") ?? "").trim();
+
+const OT = ["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi"];
+const NT = ["Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"];
+const ORDER = new Map([...OT, ...NT].map((b, i) => [b, i]));
+
+const counts = await all<{ book: string; primary_n: number; any_n: number }>(
+  db,
+  `SELECT book, COUNT(DISTINCT CASE WHEN is_primary=1 THEN item_id END) AS primary_n, COUNT(DISTINCT item_id) AS any_n
+   FROM scripture_refs GROUP BY book`
+);
+const countMap = new Map(counts.map((c) => [c.book, c]));
+
+type Row = { id: number; slug: string; title: string; speaker_name: string; recorded_on: string; passage_ref: string };
+const cols = `i.id, i.slug, i.title, sp.name AS speaker_name, i.recorded_on, i.passage_ref`;
+const joinSp = `LEFT JOIN speakers sp ON sp.id = i.speaker_id`;
+const preached = selectedBook ? await all<Row>(db,
+  `SELECT DISTINCT ${cols} FROM scripture_refs r JOIN items i ON i.id=r.item_id ${joinSp}
+   WHERE r.is_primary=1 AND r.book=? ORDER BY i.recorded_on DESC`, selectedBook) : [];
+const mentioned = selectedBook ? await all<Row>(db,
+  `SELECT DISTINCT ${cols} FROM scripture_refs r JOIN items i ON i.id=r.item_id ${joinSp}
+   WHERE r.is_primary=0 AND r.book=? AND i.id NOT IN (SELECT item_id FROM scripture_refs WHERE book=? AND is_primary=1)
+   ORDER BY i.recorded_on DESC`, selectedBook, selectedBook) : [];
+
+function section(books: string[]) { return books.filter((b) => countMap.has(b)).sort((a, b) => ORDER.get(a)! - ORDER.get(b)!); }
+const otBooks = section(OT), ntBooks = section(NT);
+---
+<Base title="Scripture index" description="Find messages by the passage they teach from or reference.">
+  <section class="section container" style="max-width:900px">
+    <h1>Scripture index</h1>
+    <p class="muted">{counts.length} books. Bold = messages <strong>taught from</strong> the book; <span class="refn">+N</span> = also <em>referenced</em>.</p>
+
+    {!selectedBook ? (
+      <>
+        {[["Old Testament", otBooks], ["New Testament", ntBooks]].map(([label, books]) => (books as string[]).length > 0 && (
+          <>
+            <h2>{label}</h2>
+            <div class="grid-books">
+              {(books as string[]).map((b) => (
+                <a class="bk" href={`/scripture?book=${encodeURIComponent(b)}`}>
+                  <span>{b}</span>
+                  <span class="nums"><span class="cnt">{countMap.get(b)!.primary_n}</span>
+                    {countMap.get(b)!.any_n > countMap.get(b)!.primary_n && <span class="refn">+{countMap.get(b)!.any_n - countMap.get(b)!.primary_n}</span>}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </>
+        ))}
+        {counts.length === 0 && <p class="muted">No scripture index yet — it fills in as transcripts load.</p>}
+      </>
+    ) : (
+      <>
+        <h2 style="margin-top:18px">{selectedBook}</h2>
+        <a class="muted" href="/scripture">← All books</a>
+        <h3 class="tier">Taught from {selectedBook} <span class="tag tag-main">main text</span></h3>
+        {preached.length === 0 ? <p class="muted">Nothing uses this book as its main text.</p> : (
+          <div class="list">{preached.map((it) => (
+            <a class="card row" href={`/listen/${it.slug}`}><div><h3 style="margin:0 0 3px">{it.title}</h3><p class="muted" style="margin:0">{it.passage_ref ?? selectedBook}{it.speaker_name ? ` · ${it.speaker_name}` : ""}</p></div><span class="muted dt">{fmtDate(it.recorded_on)}</span></a>
+          ))}</div>
+        )}
+        {mentioned.length > 0 && (<>
+          <h3 class="tier">Also referenced in <span class="tag tag-ref">mentioned</span></h3>
+          <div class="list">{mentioned.map((it) => (
+            <a class="card row" href={`/listen/${it.slug}`}><div><h3 style="margin:0 0 3px">{it.title}</h3><p class="muted" style="margin:0">{it.speaker_name ?? ""}</p></div><span class="muted dt">{fmtDate(it.recorded_on)}</span></a>
+          ))}</div>
+        </>)}
+      </>
+    )}
+  </section>
+</Base>
+
+<style>
+  .grid-books { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 10px; margin-top: 14px; }
+  .bk { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 15px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text); font-weight: 500; }
+  .bk:hover { border-color: var(--brand-300); text-decoration: none; }
+  .nums { display: inline-flex; align-items: center; gap: 5px; }
+  .cnt { font-size: .8rem; font-weight: 700; color: #07121a; background: var(--brand); border-radius: 999px; padding: 1px 9px; }
+  .refn { font-size: .75rem; color: var(--text-soft); background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; }
+  .tier { margin-top: 26px; display: flex; align-items: center; gap: 10px; }
+  .tag { font-family: var(--font); font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; }
+  .tag-main { background: var(--brand); color: #07121a; } .tag-ref { background: var(--bg-soft); color: var(--text-soft); border: 1px solid var(--border); }
+  .list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .row:hover { text-decoration: none; border-color: var(--brand-300); }
+  .dt { white-space: nowrap; font-size: .88rem; }
+</style>

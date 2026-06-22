@@ -1,0 +1,126 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDB, all } from "@lib/db";
+import { CATEGORIES, CATEGORY_LABEL, fmtDate } from "@lib/catalog";
+
+const db = getDB(Astro.locals);
+const params = Astro.url.searchParams;
+const q = (params.get("q") ?? "").trim();
+const category = (params.get("category") ?? "").trim();
+const speaker = (params.get("speaker") ?? "").trim();
+const collection = (params.get("collection") ?? "").trim();
+
+const ftsQuery = q
+  ? q.split(/\s+/).map((t) => t.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).map((t) => `${t}*`).join(" ")
+  : "";
+
+const where: string[] = ["i.published = 1"];
+const args: unknown[] = [];
+const joins: string[] = [];
+if (ftsQuery) { joins.push("JOIN item_fts ON item_fts.item_id = i.id"); where.push("item_fts MATCH ?"); args.push(ftsQuery); }
+if (category) { where.push("i.category = ?"); args.push(category); }
+if (speaker) { where.push("sp.slug = ?"); args.push(speaker); }
+if (collection) { where.push("co.slug = ?"); args.push(collection); }
+
+const items = await all<{
+  id: number; slug: string; title: string; category: string; recorded_on: string;
+  passage_ref: string; speaker_name: string; speaker_slug: string; collection_title: string;
+  has_transcript: number;
+}>(
+  db,
+  `SELECT i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref,
+          sp.name AS speaker_name, sp.slug AS speaker_slug, co.title AS collection_title,
+          (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript
+   FROM items i
+   LEFT JOIN speakers sp ON sp.id = i.speaker_id
+   LEFT JOIN collections co ON co.id = i.collection_id
+   ${joins.join(" ")}
+   WHERE ${where.join(" AND ")}
+   ORDER BY i.recorded_on DESC, i.id DESC
+   LIMIT 300`,
+  ...args
+);
+
+const speakers = await all<{ name: string; slug: string }>(
+  db, `SELECT name, slug FROM speakers WHERE id IN (SELECT DISTINCT speaker_id FROM items WHERE speaker_id IS NOT NULL) ORDER BY name`
+);
+const collections = await all<{ title: string; slug: string }>(
+  db, `SELECT title, slug FROM collections WHERE id IN (SELECT DISTINCT collection_id FROM items WHERE collection_id IS NOT NULL) ORDER BY title`
+);
+const catCounts = await all<{ category: string; n: number }>(
+  db, `SELECT category, COUNT(*) n FROM items WHERE published=1 GROUP BY category`
+);
+const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
+---
+<Base title="Browse" description="Browse all audio — sermons, classes, conferences, and open-air preaching.">
+  <section class="section container">
+    <h1>Browse the library</h1>
+
+    <div class="cat-row">
+      <a class={`pill ${!category ? "on" : ""}`} href="/listen">All</a>
+      {CATEGORIES.map((c) => countOf(c.key) > 0 && (
+        <a class={`pill ${category === c.key ? "on" : ""}`} href={`/listen?category=${c.key}`}>{c.label} <span class="n">{countOf(c.key)}</span></a>
+      ))}
+    </div>
+
+    <form method="GET" class="filters card">
+      <input type="hidden" name="category" value={category} />
+      <div class="field-row">
+        <div><label for="q">Search</label><input id="q" name="q" value={q} placeholder="Title, speaker, passage, transcript…" /></div>
+        <div>
+          <label for="speaker">Speaker</label>
+          <select id="speaker" name="speaker"><option value="">All</option>
+            {speakers.map((s) => <option value={s.slug} selected={s.slug === speaker}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label for="collection">Series / Collection</label>
+          <select id="collection" name="collection"><option value="">All</option>
+            {collections.map((c) => <option value={c.slug} selected={c.slug === collection}>{c.title}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary btn-sm" type="submit">Filter</button>
+        <a class="btn btn-outline btn-sm" href="/listen">Reset</a>
+      </div>
+    </form>
+
+    <p class="muted" style="margin-top:16px">{items.length}{items.length === 300 ? "+" : ""} item{items.length === 1 ? "" : "s"}</p>
+
+    {items.length === 0 ? <p class="muted">Nothing matches those filters.</p> : (
+      <div class="list">
+        {items.map((it) => (
+          <a class="card row" href={`/listen/${it.slug}`}>
+            <div class="row-main">
+              <div class="row-tags">
+                <span class="badge badge-cat">{CATEGORY_LABEL[it.category] ?? it.category}</span>
+                {it.collection_title && <span class="badge">{it.collection_title}</span>}
+                {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
+              </div>
+              <h3 style="margin:6px 0 2px">{it.title}</h3>
+              {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
+              <p class="muted" style="margin:2px 0 0">{it.speaker_name}</p>
+            </div>
+            <span class="muted date">{fmtDate(it.recorded_on)}</span>
+          </a>
+        ))}
+      </div>
+    )}
+  </section>
+</Base>
+
+<style>
+  .cat-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+  .pill { padding: 6px 13px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-soft); font-size: .9rem; font-weight: 500; }
+  .pill:hover { text-decoration: none; border-color: var(--brand-300); color: var(--text); }
+  .pill.on { background: var(--brand); color: #07121a; border-color: var(--brand); }
+  .pill .n { opacity: .7; font-size: .8rem; }
+  .list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .row:hover { text-decoration: none; border-color: var(--brand-300); }
+  .row-main { min-width: 0; }
+  .row-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .passage-tag { display: inline-block; font-family: var(--serif); color: var(--brand); font-weight: 600; font-size: .95rem; }
+  .date { white-space: nowrap; font-size: .88rem; }
+</style>

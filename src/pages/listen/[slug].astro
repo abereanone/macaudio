@@ -1,0 +1,138 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getDB, one, all } from "@lib/db";
+import { CATEGORY_LABEL, fmtDate } from "@lib/catalog";
+
+const env = Astro.locals.runtime.env;
+const db = getDB(Astro.locals);
+const slug = Astro.params.slug ?? "";
+
+const item = await one<{
+  id: number; title: string; category: string; recorded_on: string; passage_ref: string;
+  description: string; r2_key: string; speaker_name: string; speaker_slug: string;
+  collection_title: string; collection_slug: string;
+}>(
+  db,
+  `SELECT i.*, sp.name AS speaker_name, sp.slug AS speaker_slug,
+          co.title AS collection_title, co.slug AS collection_slug
+   FROM items i
+   LEFT JOIN speakers sp ON sp.id = i.speaker_id
+   LEFT JOIN collections co ON co.id = i.collection_id
+   WHERE i.slug = ? AND i.published = 1`,
+  slug
+);
+if (!item) return Astro.redirect("/listen");
+
+const refs = await all<{ book: string; chapter: number; verse_start: number; verse_end: number; is_primary: number }>(
+  db, `SELECT book, chapter, verse_start, verse_end, is_primary FROM scripture_refs WHERE item_id=? ORDER BY is_primary DESC, book, chapter, verse_start`, item.id
+);
+const transcript = await one<{ text: string }>(db, `SELECT text FROM item_transcripts WHERE item_id=?`, item.id);
+
+const encodeKey = (k: string) => k.split("/").map(encodeURIComponent).join("/");
+const audioUrl = item.r2_key && env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(item.r2_key)}` : null;
+const shareUrl = new URL(Astro.url.pathname, Astro.site).href;
+
+function fmtRef(r: { book: string; chapter: number | null; verse_start: number | null; verse_end: number | null }): string {
+  let s = r.book;
+  if (r.chapter) { s += ` ${r.chapter}`; if (r.verse_start) { s += `:${r.verse_start}`; if (r.verse_end) s += `-${r.verse_end}`; } }
+  return s;
+}
+const primaryRefs = refs.filter((r) => r.is_primary);
+const seen = new Set(primaryRefs.map(fmtRef));
+const otherRefs = refs.filter((r) => !r.is_primary && !seen.has(fmtRef(r)) && (seen.add(fmtRef(r)), true));
+const splitParas = (s: string) => s.replace(/\r\n?/g, "\n").split(/\n{2,}/).filter((p) => p.trim());
+const transcriptParas = transcript?.text ? splitParas(transcript.text) : [];
+const descParas = item.description ? splitParas(item.description) : [];
+const ogDescription = [item.speaker_name, fmtDate(item.recorded_on), primaryRefs.length ? fmtRef(primaryRefs[0]) : null, CATEGORY_LABEL[item.category]].filter(Boolean).join(" · ");
+const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.recorded_on ? fmtDate(item.recorded_on) : null].filter(Boolean);
+---
+<Base title={item.title} description={ogDescription || item.title}>
+  <section class="container detail">
+    <a href="/listen" class="muted">← Back to library</a>
+    <h1 style="margin-top:8px">{item.title}</h1>
+    <p class="meta">
+      {item.speaker_name && (item.speaker_slug
+        ? <a href={`/listen?speaker=${item.speaker_slug}`}>{item.speaker_name}</a>
+        : <span>{item.speaker_name}</span>)}
+      {metaBits.map((b) => <span class="dot">{b}</span>)}
+    </p>
+
+    {primaryRefs.length > 0 && (
+      <p class="passage"><span class="eyebrow">Main passage</span>
+        {primaryRefs.map((r) => <a class="passage-link" href={`/scripture?book=${encodeURIComponent(r.book)}`}>{fmtRef(r)}</a>)}
+      </p>
+    )}
+
+    {descParas.length > 0 && (
+      <details class="desc"><summary>📝 Notes / description</summary>
+        <div class="desc-text">{descParas.map((p) => <p>{p}</p>)}</div>
+      </details>
+    )}
+
+    <div class="player">
+      {audioUrl ? (
+        <audio controls preload="none"><source src={audioUrl} type="audio/mpeg" />Your browser doesn't support audio.</audio>
+      ) : (
+        <div class="muted no-audio">Audio isn't available for this message — transcript below.</div>
+      )}
+      <div class="actions">
+        {audioUrl && <a class="btn btn-outline btn-sm" href={audioUrl} download>⤓ Download</a>}
+        <button class="btn btn-outline btn-sm" type="button" data-copy={shareUrl}>🔗 Copy link</button>
+        <button class="btn btn-outline btn-sm" type="button" data-share={shareUrl} data-title={item.title}>↗ Share</button>
+      </div>
+    </div>
+
+    {transcriptParas.length > 0 && (
+      <section class="reading">
+        <h2>Transcript</h2>
+        <div class="transcript">{transcriptParas.map((p) => <p>{p}</p>)}</div>
+      </section>
+    )}
+
+    {otherRefs.length > 0 && (
+      <div class="card refs-card">
+        <h3 style="margin-top:0">Also referenced</h3>
+        <p class="muted" style="margin:0 0 10px;font-size:.88rem">Passages mentioned in this message.</p>
+        <div class="chips">{otherRefs.map((r) => <a class="chip" href={`/scripture?book=${encodeURIComponent(r.book)}`}>{fmtRef(r)}</a>)}</div>
+      </div>
+    )}
+  </section>
+
+  <script is:inline>
+    document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1500);} catch(e){}
+    }));
+    document.querySelectorAll("[data-share]").forEach((b) => b.addEventListener("click", async () => {
+      const url=b.dataset.share, title=b.dataset.title||document.title;
+      if (navigator.share) { try { await navigator.share({title, url}); } catch(e){} return; }
+      try { await navigator.clipboard.writeText(url); const t=b.textContent; b.textContent="✓ Link copied"; setTimeout(()=>b.textContent=t,1500);} catch(e){}
+    }));
+  </script>
+</Base>
+
+<style>
+  .detail { max-width: 780px; padding-block: 26px 56px; }  /* horizontal padding comes from .container */
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-soft); margin: 4px 0 12px; }
+  .meta .dot::before { content: "· "; }
+  .eyebrow { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-soft); margin-bottom: 2px; }
+  .passage { margin: 0 0 12px; }
+  .passage-link { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; color: var(--brand); margin-right: 14px; }
+  .desc { margin: 0 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-soft); }
+  .desc > summary { cursor: pointer; list-style: none; padding: 10px 14px; font-weight: 600; font-size: .92rem; color: var(--brand); }
+  .desc > summary::-webkit-details-marker { display: none; }
+  .desc > summary::before { content: "▸ "; } .desc[open] > summary::before { content: "▾ "; }
+  .desc-text { padding: 0 16px 14px; max-height: 340px; overflow-y: auto; }
+  .desc-text p { margin: 0 0 .7em; line-height: 1.7; color: var(--text-soft); }
+  .player { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .player audio { flex: 1 1 280px; min-width: 0; height: 42px; }
+  .no-audio { flex: 1 1 240px; font-size: .92rem; font-style: italic; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .reading { margin-top: 28px; }
+  .reading h2 { margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .transcript p { margin: 0 0 1.15em; font-size: 1.08rem; line-height: 1.85; }
+  .transcript p:first-of-type::first-letter { float: left; font-family: var(--serif); font-size: 3.4rem; line-height: .8; font-weight: 700; color: var(--brand); margin: 6px 10px 0 0; }
+  .refs-card { margin-top: 26px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--bg-soft); border: 1px solid var(--border); font-size: .85rem; color: var(--text); }
+  .chip:hover { border-color: var(--brand-300); text-decoration: none; }
+</style>
