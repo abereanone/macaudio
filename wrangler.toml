@@ -23,5 +23,5 @@ id = "e365a9a645a44b05a9c084468e18b245"          # namespace "MACAUDIO"
 [vars]
 SITE_NAME = "Michael Coughlin — Audio"
 SITE_SHORT_NAME = "MC Audio"
-SITE_URL = "https://audio.michaelcoughlin.net"
-MEDIA_BASE_URL = "https://media.michaelcoughlin.net"         # R2 public custom domain
+SITE_URL = "https://teaching.michaelcoughlin.net"           # Astro site (Pages custom domain)
+MEDIA_BASE_URL = "https://audio.michaelcoughlin.net"        # R2 audio files (bucket custom domain)

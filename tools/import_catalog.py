@@ -291,11 +291,23 @@ def main() -> None:
                 excluded.append({"path": str(f), "speaker": speaker, "title": title})
                 continue
 
-            # DEDUPE on (normalized title, year)
+            # DEDUPE: same recording = same PRECISE date + ~same duration (a
+            # re-encoded / silence-clipped copy), OR same normalized title + year
+            # (feed/ID3 twins, retitles). Same-day-but-different items (e.g. a
+            # sermon vs its communion message) survive because their durations
+            # differ by tens of minutes — far more than DUP_DURATION_TOL.
             identity = (norm(title), (date or "")[:4])
-            if identity[0] and identity in seen_identity:
-                kept = seen_identity[identity]
-                dropped.append({"dropped": str(f), "kept_path": kept["path"], "title": title})
+            dup_path = None
+            if date_precise and duration is not None:
+                for sd, spath in seen_recordings.get(date, []):
+                    if abs(sd - duration) <= DUP_DURATION_TOL:
+                        dup_path = spath
+                        break
+            if not dup_path and identity[0] and identity in seen_identity:
+                dup_path = seen_identity[identity]["path"]
+            if dup_path:
+                dropped.append({"dropped": str(f), "kept_path": dup_path, "title": title,
+                                "dur": duration, "date": date})
                 skipped_dup += 1
                 continue
             slug = slugify((date + "-" if date else "") + title)
@@ -306,23 +318,28 @@ def main() -> None:
             used_slugs.add(slug)
             if identity[0]:
                 seen_identity[identity] = {"slug": slug, "path": str(f)}
+            if date_precise and duration is not None:
+                seen_recordings.setdefault(date, []).append((duration, str(f)))
 
-            # apply redactions by slug
+            # apply redactions by slug. r2_key keeps the source's real extension
+            # (.mp3 / .m4a) so uploaded bytes match the key and play correctly.
+            ext = f.suffix.lower()
             red = REDACTIONS.get(slug)
             if red:
                 for t in red.get("remove_text", []):
                     if transcript:
                         transcript = transcript.replace(t, "")
                 if not red.get("drop_audio"):
-                    r2_key = f"audio/{cat}/{slug}.mp3"
+                    r2_key = f"audio/{cat}/{slug}{ext}"
             else:
-                r2_key = f"audio/{cat}/{slug}.mp3"
+                r2_key = f"audio/{cat}/{slug}{ext}"
 
             rows.append({
                 "slug": slug, "title": title, "category": cat, "speaker": speaker,
                 "collection": collection, "recorded_on": date, "passage_ref": passage_ref,
                 "primary": primary, "r2_key": r2_key, "source_path": str(f),
                 "transcript": transcript,
+                "duration": int(duration) if duration is not None else None,
             })
 
     # ---- build SQL ----
@@ -350,8 +367,8 @@ def main() -> None:
         spk = f"(SELECT id FROM speakers WHERE name={q(r['speaker'])})" if r["speaker"] else "NULL"
         tstatus = "done" if r["transcript"] else "none"
         lines.append(
-            f"INSERT INTO items (slug, title, category, speaker_id, collection_id, recorded_on, passage_ref, r2_key, source_path, transcript_status) "
-            f"VALUES ({q(r['slug'])}, {q(r['title'])}, {q(r['category'])}, {spk}, {coll}, {q(r['recorded_on'])}, {q(r['passage_ref'])}, {q(r['r2_key'])}, {q(r['source_path'])}, {q(tstatus)});")
+            f"INSERT INTO items (slug, title, category, speaker_id, collection_id, recorded_on, passage_ref, r2_key, duration_sec, source_path, transcript_status) "
+            f"VALUES ({q(r['slug'])}, {q(r['title'])}, {q(r['category'])}, {spk}, {coll}, {q(r['recorded_on'])}, {q(r['passage_ref'])}, {q(r['r2_key'])}, {q(r['duration'])}, {q(r['source_path'])}, {q(tstatus)});")
     lines += ["", "-- transcripts + scripture refs"]
     for r in rows:
         sid = f"(SELECT id FROM items WHERE slug={q(r['slug'])})"
@@ -379,8 +396,11 @@ def main() -> None:
     dl = ["@echo off",
           "REM Deletes duplicate source audio (.mp3) + transcript (.txt) NOT used by the site.",
           "REM Review tools/deduped_report.txt first. Nothing here ran automatically.", ""]
-    for d in sorted(dropped, key=lambda x: x["dropped"]):
-        rep += [f"KEEP: {d['kept_path']}", f"DROP: {d['dropped']}", ""]
+    def _mmss(s):
+        return f"{int(s)//60}m{int(s)%60:02d}" if s else "?"
+    for d in sorted(dropped, key=lambda x: (x.get("date") or "", x["dropped"])):
+        tag = f"  [{d.get('date') or '?'} · {_mmss(d.get('dur'))}]" if d.get("date") else ""
+        rep += [f"DROP{tag}: {d['dropped']}", f"  KEEP: {d['kept_path']}", ""]
         dp = Path(d["dropped"])
         dl.append(f'del /f /q "{dp}"')
         dl.append(f'del /f /q "{dp.with_suffix(".txt")}"')

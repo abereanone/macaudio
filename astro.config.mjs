@@ -8,5 +8,5 @@ export default defineConfig({
     platformProxy: { enabled: true },
     imageService: "compile",
   }),
-  site: "https://audio.michaelcoughlin.net",
+  site: "https://teaching.michaelcoughlin.net",
 });
