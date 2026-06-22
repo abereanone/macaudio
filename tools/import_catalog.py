@@ -14,6 +14,7 @@ Metadata priority: feeds (c:\\code\\feeds) > ID3 tags > filename parsing.
 """
 from __future__ import annotations
 
+import html
 import re
 import subprocess
 import sys
@@ -50,6 +51,11 @@ PROTON = Path(r"C:/Users/mac/Proton Drive/abereanone/My files")
 BT = PROTON / "02_Bible-Teaching"
 DEFAULT_SPEAKER = "Michael Coughlin"
 MICHAEL_ONLY = True  # this is Michael's audio site — exclude items he didn't speak
+# Two files on the SAME recording date whose durations are within this many
+# seconds are treated as the same recording (a re-encode / silence-clipped copy).
+# True dups are within seconds; a sermon vs its communion message on the same day
+# differ by 20-40 min, so this comfortably separates them.
+DUP_DURATION_TOL = 120
 GENERIC_ALBUMS = {"", "covenant bible church", "covenantbibleohio.com", "lbc"}
 # ID3 artist values that aren't real people (recorder/software defaults).
 BAD_ARTIST = re.compile(r"freeswitch|mod_conference|my recording|untitled|^track ?\d|^unknown", re.I)
@@ -104,7 +110,7 @@ def norm(s: str) -> str:
 
 def read_tags(p: Path) -> dict:
     try:
-        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags",
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration:format_tags",
                               "-of", "default=noprint_wrappers=1", str(p)],
                              capture_output=True, text=True, timeout=40).stdout
     except Exception:
@@ -114,6 +120,11 @@ def read_tags(p: Path) -> dict:
         if line.startswith("TAG:") and "=" in line:
             k, v = line[4:].split("=", 1)
             d.setdefault(k.strip().lower(), v.strip())
+        elif line.startswith("duration=") and "__dur__" not in d:
+            try:
+                d["__dur__"] = float(line.split("=", 1)[1])
+            except ValueError:
+                pass
     return d
 
 
@@ -135,7 +146,7 @@ def load_feeds() -> dict:
             if not em:
                 continue
             base = urllib.parse.unquote(em.group(1).rsplit("/", 1)[-1]).lower()
-            title = re.sub(r"<[^>]+>", "", tm.group(1)).strip() if tm else ""
+            title = html.unescape(re.sub(r"<[^>]+>", "", tm.group(1)).strip()) if tm else ""
             speaker = None
             m = re.match(r"^([A-Z][\w.'’ ]+?):\s*(.+)$", title)  # "Speaker: rest"
             if m:
@@ -188,6 +199,7 @@ def main() -> None:
     rows = []
     used_slugs: set[str] = set()
     seen_identity: dict = {}   # (norm title, year) -> {slug, path}
+    seen_recordings: dict[str, list[tuple[float, str]]] = {}  # date -> [(duration_sec, path)]
     dropped: list[dict] = []   # duplicate files not imported
     excluded: list[dict] = []  # non-Michael items excluded from the site
     audio_exts = {".mp3", ".m4a", ".wav", ".flac"}
@@ -210,8 +222,8 @@ def main() -> None:
             if kind == "cbcoh":
                 cat, cb_speaker, cb_date = cbcoh_meta(stem)
 
-            # title
-            title = (feed and feed["title"]) or tags.get("title") or split_camel(stem)
+            # title (html.unescape fixes feed entities like "David &amp; Bathsheba")
+            title = html.unescape((feed and feed["title"]) or tags.get("title") or split_camel(stem))
             # speaker: feed (per-episode, e.g. 1 John) > cbcoh filename > ID3 artist > default
             artist = tags.get("artist", "")
             artist_ok = artist and artist.lower() not in GENERIC_ALBUMS and not BAD_ARTIST.search(artist)
@@ -219,12 +231,16 @@ def main() -> None:
             # collection: feed series > non-generic ID3 album
             album = tags.get("album", "")
             collection = (feed and feed["series"]) or (album if album.lower() not in GENERIC_ALBUMS else None)
-            # date: filename > cbcoh date > ID3 year
+            # date: filename > cbcoh date (both PRECISE day) > ID3 year (NOT precise)
             date = None
             mfn = re.search(r"(\d{8})", stem)
             if mfn:
                 date = iso_from_yyyymmdd(mfn.group(1))
-            date = date or cb_date or (f"{tags['date'][-4:]}-01-01" if tags.get("date", "")[-4:].isdigit() else None)
+            date = date or cb_date
+            date_precise = date is not None   # a real day, not a YYYY-01-01 guess
+            if not date and tags.get("date", "")[-4:].isdigit():
+                date = f"{tags['date'][-4:]}-01-01"
+            duration = tags.get("__dur__")    # seconds (float) or None
 
             transcript = (f.with_suffix(".txt").read_text(encoding="utf-8")
                           if f.with_suffix(".txt").exists() else None)

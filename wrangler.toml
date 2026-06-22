@@ -1,5 +1,4 @@
 name = "macaudio"
-account_id = "6481c7e370bbed874eb7679096eb1612"   # abereanone@pm.me
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
