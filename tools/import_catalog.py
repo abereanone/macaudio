@@ -248,6 +248,12 @@ def main() -> None:
 
             # per-file metadata overrides (tools/overrides.py)
             ov = OVERRIDES.get(stem)
+            if ov and ov.get("drop"):
+                # explicit drop (e.g. an unrelated-name duplicate the auto-dedupe
+                # can't catch). Record it so its source shows up in delete_dupes.bat.
+                dropped.append({"dropped": str(f), "kept_path": "(dropped via overrides.py)", "title": title})
+                skipped_dup += 1
+                continue
             if ov:
                 title = ov.get("title", title)
                 date = ov.get("recorded_on", date)
@@ -310,8 +316,11 @@ def main() -> None:
         if r["collection"]:
             coll_map.setdefault(r["collection"], r["category"])
     collections = sorted(coll_map.items())
-    lines = ["PRAGMA foreign_keys = ON;", "BEGIN TRANSACTION;",
-             "DELETE FROM scripture_refs;", "DELETE FROM item_transcripts;",
+    # NOTE: no PRAGMA / BEGIN TRANSACTION / COMMIT — D1's HTTP API (`wrangler d1
+    # execute --remote`) rejects explicit transactions, and we want a single file
+    # that applies cleanly both --local and --remote so deploys are just correct.
+    # The leading DELETEs keep the reseed idempotent.
+    lines = ["DELETE FROM scripture_refs;", "DELETE FROM item_transcripts;",
              "DELETE FROM item_fts;", "DELETE FROM items;",
              "DELETE FROM collections;", "DELETE FROM speakers;", "", "-- speakers"]
     for s in speakers:
@@ -341,8 +350,7 @@ def main() -> None:
                              f"VALUES ({sid}, {q(ref['book'])}, {q(ref['chapter'])}, {q(ref['verse_start'])}, {q(ref['verse_end'])}, 0, {q(ref['ref_text'])}, 'transcript');")
     lines += ["", "INSERT INTO item_fts (item_id, title, speaker, passage_ref, transcript) "
               "SELECT i.id, i.title, COALESCE(sp.name,''), COALESCE(i.passage_ref,''), COALESCE(t.text,'') "
-              "FROM items i LEFT JOIN speakers sp ON sp.id=i.speaker_id LEFT JOIN item_transcripts t ON t.item_id=i.id;",
-              "COMMIT;"]
+              "FROM items i LEFT JOIN speakers sp ON sp.id=i.speaker_id LEFT JOIN item_transcripts t ON t.item_id=i.id;"]
 
     IMPORT_SQL.parent.mkdir(parents=True, exist_ok=True)
     IMPORT_SQL.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -383,8 +391,8 @@ def main() -> None:
     print(f"  dedupe review -> tools/deduped_report.txt ; delete script (NOT run) -> tools/delete_dupes.bat")
 
     if "--apply" in sys.argv:
-        print("applying to LOCAL d1 (macaudio-db) ...")
-        subprocess.run(["npx", "wrangler", "d1", "execute", "macaudio-db", "--local", f"--file={IMPORT_SQL}", "--yes"],
+        print("applying to LOCAL d1 (binding DB) ...")
+        subprocess.run(["npx", "wrangler", "d1", "execute", "DB", "--local", f"--file={IMPORT_SQL}", "--yes"],
                        cwd=REPO, check=True, shell=(sys.platform == "win32"))
 
 

@@ -1,0 +1,14 @@
+{
+  "name": "Michael Coughlin — Audio",
+  "short_name": "MC Audio",
+  "description": "Sermons, classes, conferences, and open-air preaching by Michael Coughlin.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b110d",
+  "theme_color": "#0b110d",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

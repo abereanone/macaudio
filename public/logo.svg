@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MC Audio">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15241b"/>
+      <stop offset="1" stop-color="#0b110d"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a7e3c4"/>
+      <stop offset="1" stop-color="#4fae85"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e7bd6f"/>
+      <stop offset="1" stop-color="#cf972f"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="5" y="5" width="502" height="502" rx="112" fill="none" stroke="#2c4a3b" stroke-width="4"/>
+  <g>
+    <rect x="96.0" y="171.0" width="44" height="170" rx="22" fill="url(#green)"/>
+    <rect x="165.0" y="111.0" width="44" height="290" rx="22" fill="url(#green)"/>
+    <rect x="234.0" y="51.0" width="44" height="410" rx="22" fill="url(#amber)"/>
+    <rect x="303.0" y="111.0" width="44" height="290" rx="22" fill="url(#green)"/>
+    <rect x="372.0" y="171.0" width="44" height="170" rx="22" fill="url(#green)"/>
+  </g>
+</svg>

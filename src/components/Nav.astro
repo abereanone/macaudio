@@ -12,7 +12,7 @@ const links = [
 <header class="site-header">
   <div class="container nav">
     <a href="/" class="brand">
-      <span class="brand-mark">MC</span>
+      <img src="/logo.svg" class="brand-mark" width="34" height="34" alt="" aria-hidden="true" />
       <span class="brand-name">{siteName}</span>
     </a>
     <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
@@ -29,7 +29,7 @@ const links = [
   .nav { display: flex; align-items: center; justify-content: space-between; height: 62px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
   .brand:hover { text-decoration: none; }
-  .brand-mark { background: var(--brand); color: #07121a; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: .85rem; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 8px; display: block; }
   .brand-name { color: var(--text); font-family: var(--serif); font-size: 1.02rem; }
   .nav-links { display: flex; align-items: center; gap: 18px; }
   .nav-links a { color: var(--text-soft); font-weight: 500; font-size: 0.95rem; }

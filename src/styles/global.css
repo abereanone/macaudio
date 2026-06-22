@@ -113,6 +113,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-300);
 .badge-cat { color: var(--accent); border-color: #d8a65755; background: #d8a65714; }
 
 /* Hero */
-.hero { background: linear-gradient(150deg, #11281c, #0b110d 70%); border-bottom: 1px solid var(--border); padding: 64px 0; }
+/* Hero is a dark green band in BOTH themes (matches the emblem/OG branding),
+   so its text is pinned to light colors regardless of the active theme. */
+.hero { background: linear-gradient(150deg, #11281c, #0b110d 70%); border-bottom: 1px solid #1c2c22; padding: 64px 0; color: #e7efe9; }
+.hero h1 { color: #eaf3ed; }
+.hero .muted { color: #9bb0a2; }
+.hero em { color: #c9d8cf; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

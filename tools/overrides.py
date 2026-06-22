@@ -1,9 +1,19 @@
 """Per-source-file metadata corrections, keyed by the audio file STEM (filename
 without extension). Applied by import_catalog.py over the auto-derived metadata.
 Fields (all optional): title, recorded_on (YYYY-MM-DD), speaker, collection,
-category, passage (display + primary scripture ref; may be book-level like '1 John').
+category, passage (display + primary scripture ref; may be book-level like '1 John'),
+drop (True -> skip this file entirely; for duplicates the auto-dedupe can't catch
+because the filenames are unrelated).
 """
 OVERRIDES = {
+    # Duplicate recording of "Elder Qualifications - Part 2" (2022-06-12), saved
+    # under the raw recorder name DM620479.MP3. The titles are unrelated so the
+    # (title, year) dedupe can't merge it — drop it explicitly.
+    "DM620479": {"drop": True},
+    # Elder Qualifications - Part 2: the transcript-frequency heuristic mis-picked
+    # Mark 11; the sermon's main text is 1 Timothy 3. (Audio is dropped via
+    # redactions.py — published as transcript-only.)
+    "20220612ElderQualsPart2": {"passage": "1 Timothy 3"},
     # Raw recorder copy of the 1 John Review — same recording as 20251228LBCSS1John;
     # this metadata makes it dedupe-merge into the published Review.
     "251228_0937": {

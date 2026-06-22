@@ -21,7 +21,13 @@ const item = await one<{
    WHERE i.slug = ? AND i.published = 1`,
   slug
 );
-if (!item) return Astro.redirect("/listen");
+// A slug that doesn't exist (or was removed) is a genuine 404 — don't redirect.
+if (!item) {
+  return new Response("Recording not found.", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+}
 
 const refs = await all<{ book: string; chapter: number; verse_start: number; verse_end: number; is_primary: number }>(
   db, `SELECT book, chapter, verse_start, verse_end, is_primary FROM scripture_refs WHERE item_id=? ORDER BY is_primary DESC, book, chapter, verse_start`, item.id
