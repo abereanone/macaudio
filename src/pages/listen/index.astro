@@ -24,11 +24,11 @@ if (collection) { where.push("co.slug = ?"); args.push(collection); }
 
 const items = await all<{
   id: number; slug: string; title: string; category: string; recorded_on: string;
-  passage_ref: string; speaker_name: string; speaker_slug: string; collection_title: string;
+  passage_ref: string; series_part: string; speaker_name: string; speaker_slug: string; collection_title: string;
   has_transcript: number;
 }>(
   db,
-  `SELECT i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref,
+  `SELECT i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
           sp.name AS speaker_name, sp.slug AS speaker_slug, co.title AS collection_title,
           (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript
    FROM items i
@@ -96,6 +96,7 @@ const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
               <div class="row-tags">
                 <span class="badge badge-cat">{CATEGORY_LABEL[it.category] ?? it.category}</span>
                 {it.collection_title && <span class="badge">{it.collection_title}</span>}
+                {it.series_part && <span class="badge badge-part">{it.series_part}</span>}
                 {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
               </div>
               <h3 style="margin:6px 0 2px">{it.title}</h3>

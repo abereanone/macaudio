@@ -9,7 +9,7 @@ const slug = Astro.params.slug ?? "";
 
 const item = await one<{
   id: number; title: string; category: string; recorded_on: string; passage_ref: string;
-  description: string; r2_key: string; speaker_name: string; speaker_slug: string;
+  series_part: string; description: string; r2_key: string; speaker_name: string; speaker_slug: string;
   collection_title: string; collection_slug: string;
 }>(
   db,
@@ -56,6 +56,9 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   <section class="container detail">
     <a href="/listen" class="muted">← Back to library</a>
     <h1 style="margin-top:8px">{item.title}</h1>
+    {item.series_part && (
+      <p class="series-pos"><span class="badge badge-part">{item.series_part}</span></p>
+    )}
     <p class="meta">
       {item.speaker_name && (item.speaker_slug
         ? <a href={`/listen?speaker=${item.speaker_slug}`}>{item.speaker_name}</a>
@@ -118,6 +121,7 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
 
 <style>
   .detail { max-width: 780px; padding-block: 26px 56px; }  /* horizontal padding comes from .container */
+  .series-pos { margin: 6px 0 0; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-soft); margin: 4px 0 12px; }
   .meta .dot::before { content: "· "; }
   .eyebrow { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-soft); margin-bottom: 2px; }

@@ -273,6 +273,7 @@ def main() -> None:
                 passage_ref = primary["ref_text"] if primary else None
 
             # per-file metadata overrides (tools/overrides.py)
+            series_part = None   # short series label (e.g. "1st Commandment · Part 1")
             ov = OVERRIDES.get(stem)
             if ov and ov.get("drop"):
                 # explicit drop (e.g. an unrelated-name duplicate the auto-dedupe
@@ -286,6 +287,7 @@ def main() -> None:
                 speaker = ov.get("speaker", speaker)
                 collection = ov.get("collection", collection)
                 cat = ov.get("category", cat)
+                series_part = ov.get("series_part", series_part)
                 for find, repl in ov.get("replace_text", []):
                     if transcript:
                         transcript = transcript.replace(find, repl)
@@ -351,7 +353,7 @@ def main() -> None:
                 "slug": slug, "title": title, "category": cat, "speaker": speaker,
                 "collection": collection, "recorded_on": date, "passage_ref": passage_ref,
                 "primary": primary, "r2_key": r2_key, "source_path": str(f),
-                "transcript": transcript,
+                "transcript": transcript, "series_part": series_part,
                 "duration": int(duration) if duration is not None else None,
             })
 
@@ -380,8 +382,8 @@ def main() -> None:
         spk = f"(SELECT id FROM speakers WHERE name={q(r['speaker'])})" if r["speaker"] else "NULL"
         tstatus = "done" if r["transcript"] else "none"
         lines.append(
-            f"INSERT INTO items (slug, title, category, speaker_id, collection_id, recorded_on, passage_ref, r2_key, duration_sec, source_path, transcript_status) "
-            f"VALUES ({q(r['slug'])}, {q(r['title'])}, {q(r['category'])}, {spk}, {coll}, {q(r['recorded_on'])}, {q(r['passage_ref'])}, {q(r['r2_key'])}, {q(r['duration'])}, {q(r['source_path'])}, {q(tstatus)});")
+            f"INSERT INTO items (slug, title, category, speaker_id, collection_id, recorded_on, passage_ref, r2_key, duration_sec, source_path, transcript_status, series_part) "
+            f"VALUES ({q(r['slug'])}, {q(r['title'])}, {q(r['category'])}, {spk}, {coll}, {q(r['recorded_on'])}, {q(r['passage_ref'])}, {q(r['r2_key'])}, {q(r['duration'])}, {q(r['source_path'])}, {q(tstatus)}, {q(r['series_part'])});")
     lines += ["", "-- transcripts + scripture refs"]
     for r in rows:
         sid = f"(SELECT id FROM items WHERE slug={q(r['slug'])})"

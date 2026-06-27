@@ -111,6 +111,8 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-300);
   border: 1px solid var(--border); color: var(--text-soft);
 }
 .badge-cat { color: var(--accent); border-color: #d8a65755; background: #d8a65714; }
+/* Series position (e.g. which commandment a sermon expounds). */
+.badge-part { color: var(--brand); border-color: var(--brand-300); background: color-mix(in srgb, var(--brand) 10%, transparent); }
 
 /* Hero */
 /* Hero is a dark green band in BOTH themes (matches the emblem/OG branding),
