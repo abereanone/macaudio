@@ -85,6 +85,11 @@ const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
         <a class="btn btn-outline btn-sm" href="/">Reset</a>
       </div>
     </form>
+    <script is:inline>
+      // Speaker / series dropdowns filter immediately on change.
+      document.querySelectorAll(".filters select").forEach((s) =>
+        s.addEventListener("change", () => s.form.submit()));
+    </script>
 
     <p class="muted" style="margin-top:16px">{items.length}{items.length === 300 ? "+" : ""} item{items.length === 1 ? "" : "s"}</p>
 
