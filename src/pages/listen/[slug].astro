@@ -60,9 +60,7 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
       <p class="series-pos"><span class="badge badge-part">{item.series_part}</span></p>
     )}
     <p class="meta">
-      {item.speaker_name && (item.speaker_slug
-        ? <a href={`/?speaker=${item.speaker_slug}`}>{item.speaker_name}</a>
-        : <span>{item.speaker_name}</span>)}
+      {item.speaker_name && <span>{item.speaker_name}</span>}
       {metaBits.map((b) => <span class="dot">{b}</span>)}
     </p>
 
