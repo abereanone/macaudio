@@ -54,14 +54,14 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
 ---
 <Base title={item.title} description={ogDescription || item.title}>
   <section class="container detail">
-    <a href="/listen" class="muted">← Back to library</a>
+    <a href="/" class="muted">← Back to library</a>
     <h1 style="margin-top:8px">{item.title}</h1>
     {item.series_part && (
       <p class="series-pos"><span class="badge badge-part">{item.series_part}</span></p>
     )}
     <p class="meta">
       {item.speaker_name && (item.speaker_slug
-        ? <a href={`/listen?speaker=${item.speaker_slug}`}>{item.speaker_name}</a>
+        ? <a href={`/?speaker=${item.speaker_slug}`}>{item.speaker_name}</a>
         : <span>{item.speaker_name}</span>)}
       {metaBits.map((b) => <span class="dot">{b}</span>)}
     </p>
