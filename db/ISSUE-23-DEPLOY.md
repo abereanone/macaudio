@@ -41,7 +41,7 @@ python tools/import_catalog.py
 
 # 2) add the new column to the remote DB (local already has it)
 $env:CLOUDFLARE_ACCOUNT_ID = "6481c7e370bbed874eb7679096eb1612"
-npx wrangler d1 execute macaudio-db --remote --file ./db/migrations/0002_add_series_part.sql
+npx wrangler d1 execute macaudio --remote --file ./db/migrations/0002_add_series_part.sql
 
 # 3) reseed the remote DB (idempotent DELETE+INSERT; applies labels, passages,
 #    corrected transcripts, dedup, and rebuilds item_fts)

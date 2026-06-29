@@ -9,10 +9,10 @@
     "deploy": "astro build && wrangler pages deploy ./dist",
     "astro": "astro",
     "typecheck": "astro check",
-    "db:migrate:local": "wrangler d1 migrations apply macaudio-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply macaudio-db --remote",
-    "db:import:local": "wrangler d1 execute macaudio-db --local --file=./db/import.sql",
-    "db:import:remote": "wrangler d1 execute macaudio-db --remote --file=./db/import.sql"
+    "db:migrate:local": "wrangler d1 migrations apply macaudio --local",
+    "db:migrate:remote": "wrangler d1 migrations apply macaudio --remote",
+    "db:import:local": "wrangler d1 execute macaudio --local --file=./db/import.sql",
+    "db:import:remote": "wrangler d1 execute macaudio --remote --file=./db/import.sql"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.2.1",
