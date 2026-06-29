@@ -78,7 +78,7 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
 
     <div class="player">
       {audioUrl ? (
-        <audio controls preload="none"><source src={audioUrl} type="audio/mpeg" />Your browser doesn't support audio.</audio>
+        <sermon-player src={audioUrl}></sermon-player>
       ) : (
         <div class="muted no-audio">Audio isn't available for this message — transcript below.</div>
       )}
@@ -105,6 +105,7 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
     )}
   </section>
 
+  <script src="/sermon-player.js" is:inline defer></script>
   <script is:inline>
     document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(b.dataset.copy); const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1500);} catch(e){}
@@ -132,7 +133,10 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   .desc-text { padding: 0 16px 14px; max-height: 340px; overflow-y: auto; }
   .desc-text p { margin: 0 0 .7em; line-height: 1.7; color: var(--text-soft); }
   .player { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
-  .player audio { flex: 1 1 280px; min-width: 0; height: 42px; }
+  .player sermon-player {
+    flex: 1 1 280px; min-width: 0;
+    --sp-accent: var(--brand); --sp-track: var(--border); --sp-muted: var(--text-soft);
+  }
   .no-audio { flex: 1 1 240px; font-size: .92rem; font-style: italic; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .reading { margin-top: 28px; }
