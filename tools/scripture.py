@@ -84,6 +84,8 @@ _BOOKS: dict[str, list[str]] = {
     "Revelation": ["rev", "rv", "apocalypse", "revelations"],
 }
 
+CANONICAL_BOOKS: list[str] = list(_BOOKS.keys())
+
 # Build alias -> canonical (longest alias first so "1 cor" beats "cor"-like noise).
 _ALIAS: dict[str, str] = {}
 for _canon, _aliases in _BOOKS.items():

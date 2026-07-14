@@ -4,6 +4,7 @@ dist/
 
 # deps
 node_modules/
+__pycache__/
 
 # cloudflare
 .wrangler/
@@ -31,3 +32,4 @@ tools/delete_dupes.bat
 tools/dup_report.txt
 tools/nonmichael_report.txt
 tools/delete_nonmichael.bat
+tools/transcribe_failures.csv
