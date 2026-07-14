@@ -396,9 +396,9 @@ def main() -> None:
             for ref in scripture.parse_refs(r["transcript"]):
                 lines.append(f"INSERT INTO scripture_refs (item_id, book, chapter, verse_start, verse_end, is_primary, ref_text, source) "
                              f"VALUES ({sid}, {q(ref['book'])}, {q(ref['chapter'])}, {q(ref['verse_start'])}, {q(ref['verse_end'])}, 0, {q(ref['ref_text'])}, 'transcript');")
-    lines += ["", "INSERT INTO item_fts (item_id, title, speaker, passage_ref, transcript) "
-              "SELECT i.id, i.title, COALESCE(sp.name,''), COALESCE(i.passage_ref,''), COALESCE(t.text,'') "
-              "FROM items i LEFT JOIN speakers sp ON sp.id=i.speaker_id LEFT JOIN item_transcripts t ON t.item_id=i.id;"]
+    # NOTE: item_fts is NOT populated here. The 0003_fts_sync triggers own it —
+    # inserting the items (above) and their item_transcripts fills the search
+    # rows automatically. A manual bulk INSERT here would double every row.
 
     IMPORT_SQL.parent.mkdir(parents=True, exist_ok=True)
     IMPORT_SQL.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -72,10 +72,12 @@ def main() -> None:
     else:
         primary = refs[0] if refs else None
 
+    # item_fts is maintained by the 0003_fts_sync triggers: the item_transcripts
+    # INSERT below fills its transcript column, and the items UPDATE rebuilds the
+    # row. Nothing here writes item_fts directly.
     lines = [
         f"DELETE FROM item_transcripts WHERE item_id={item_id};",
         f"DELETE FROM scripture_refs WHERE item_id={item_id};",
-        f"DELETE FROM item_fts WHERE item_id={item_id};",
         f"INSERT INTO item_transcripts (item_id, text, model) VALUES ({item_id}, {q(text)}, 'groq whisper-large-v3');",
         f"UPDATE items SET transcript_status='done'"
         + (f", passage_ref={q(primary['ref_text'])}" if primary else "")
@@ -92,11 +94,6 @@ def main() -> None:
             f"INSERT INTO scripture_refs (item_id, book, chapter, verse_start, verse_end, is_primary, ref_text, source) "
             f"VALUES ({item_id}, {q(r['book'])}, {q(r['chapter'])}, {q(r['verse_start'])}, {q(r['verse_end'])}, 0, {q(r['ref_text'])}, 'transcript');"
         )
-    lines.append(
-        "INSERT INTO item_fts (item_id, title, speaker, passage_ref, transcript) "
-        f"SELECT i.id, i.title, COALESCE(sp.name,''), COALESCE(i.passage_ref,''), {q(text)} "
-        f"FROM items i LEFT JOIN speakers sp ON sp.id=i.speaker_id WHERE i.id={item_id};"
-    )
 
     sql_path = REPO / "tools" / f"_attach_{args.slug}.sql"
     sql_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
