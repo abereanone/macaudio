@@ -33,3 +33,12 @@ tools/dup_report.txt
 tools/nonmichael_report.txt
 tools/delete_nonmichael.bat
 tools/transcribe_failures.csv
+tools/.transcript_cache.json
+tools/.extract_progress.json
+tools/_extract_refs.sql
+sitemapActivity.md
+tools/audit_passages.py
+tools/extract_refs.py
+tools/fix_passage.py
+tools/passage_audit.csv
+tools/scripture.py
