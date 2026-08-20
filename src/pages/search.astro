@@ -1,0 +1,199 @@
+---
+import Base from "../layouts/Base.astro";
+import ResultRow from "../components/ResultRow.astro";
+import { getDB, all } from "@lib/db";
+import { parseRefs } from "@lib/scripture";
+
+// A dedicated search page, separate from "/" (Browse). Browse is a filterable
+// shelf you skim; this is the box you come to with a question in mind -- most
+// importantly a scripture reference, which plain FTS handles badly (see below).
+
+const db = getDB(Astro.locals);
+const q = (Astro.url.searchParams.get("q") ?? "").trim();
+
+// A query like "Hebrews 7:1" is a *structured* question full-text search cannot
+// answer: the FTS tokenizer drops the colon and ends up searching for "71". So
+// when the query parses as a reference we resolve it against scripture_refs --
+// which stores book/chapter/verse -- and fall back to FTS for everything else.
+const refs = q ? parseRefs(q) : [];
+// Treat it as a scripture lookup only when the reference IS the whole query,
+// not when a verse happens to appear inside a longer sentence.
+const bare = q.replace(/[\s,;]+/g, " ").trim().toLowerCase();
+const ref = refs.length === 1 && refs[0].ref_text.replace(/\s+/g, " ").toLowerCase() === bare ? refs[0] : null;
+
+const vLo = ref?.verse_start ?? null;
+const vHi = ref?.verse_end ?? ref?.verse_start ?? null;
+const verseMode = vLo !== null;
+
+type Row = {
+  id: number; slug: string; title: string; category: string; recorded_on: string;
+  passage_ref: string; series_part: string; speaker_name: string; collection_title: string;
+  has_transcript: number; hits: string | null;
+  primary_precise: number; any_precise: number; any_primary: number;
+};
+
+const ROW_COLS = `i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
+                  sp.name AS speaker_name, co.title AS collection_title,
+                  (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript`;
+const ROW_JOINS = `LEFT JOIN speakers sp ON sp.id = i.speaker_id
+                   LEFT JOIN collections co ON co.id = i.collection_id`;
+
+// Verse containment, not equality: asking for Hebrews 7:2 must return the
+// sermon stored as Hebrews 7:1-10.
+//
+// A ref with a NULL verse_start is chapter-wide, and ~79% of the table is in
+// that state. Those must NOT count as a verse hit: "this message touches Psalm
+// 119 somewhere" is not evidence it taught verse 105. So a chapter-only ref is
+// demoted to its own bucket below rather than padding the real matches. When
+// the query itself names no verse (?3 IS NULL), every ref in the chapter is an
+// exact answer and this collapses to a plain chapter match.
+// Params: ?1 book, ?2 chapter, ?3 verse_lo, ?4 verse_hi.
+const PRECISE = `(?3 IS NULL OR (r.verse_start IS NOT NULL
+                   AND r.verse_start <= ?4 AND COALESCE(r.verse_end, r.verse_start) >= ?3))`;
+
+const refRows = ref
+  ? await all<Row>(
+      db,
+      `SELECT ${ROW_COLS},
+              MAX(CASE WHEN r.is_primary = 1 AND ${PRECISE} THEN 1 ELSE 0 END) AS primary_precise,
+              MAX(CASE WHEN ${PRECISE} THEN 1 ELSE 0 END) AS any_precise,
+              MAX(r.is_primary) AS any_primary,
+              GROUP_CONCAT(DISTINCT r.ref_text) AS hits
+         FROM scripture_refs r
+         JOIN items i ON i.id = r.item_id
+         ${ROW_JOINS}
+        WHERE i.published = 1 AND r.book = ?1 AND r.chapter = ?2
+        GROUP BY i.id
+        ORDER BY i.recorded_on DESC, i.id DESC
+        LIMIT 300`,
+      ref.book, ref.chapter, vLo, vHi
+    )
+  : [];
+
+// Three tiers of confidence, strongest first.
+const taughtFrom = refRows.filter((r) => r.primary_precise === 1);
+const alsoRefs = refRows.filter((r) => r.primary_precise === 0 && r.any_precise === 1);
+// Only meaningful on a verse query -- on a chapter query PRECISE is always true,
+// so this is empty by construction.
+const chapterOnly = refRows.filter((r) => r.any_precise === 0);
+
+// Plain full-text search, for everything that isn't a bare reference.
+const ftsQuery = q && !ref
+  ? q.split(/\s+/).map((t) => t.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).map((t) => `${t}*`).join(" ")
+  : "";
+
+// @@H@@ markers become <mark> only after HTML-escaping, so transcript text can
+// never inject markup.
+const textRows = ftsQuery
+  ? await all<Row & { snip: string | null }>(
+      db,
+      `SELECT ${ROW_COLS}, snippet(item_fts, -1, '@@H@@', '@@/H@@', '…', 12) AS snip, NULL AS hits
+         FROM items i
+         JOIN item_fts ON item_fts.item_id = i.id
+         ${ROW_JOINS}
+        WHERE i.published = 1 AND item_fts MATCH ?1
+        ORDER BY bm25(item_fts)
+        LIMIT 200`,
+      ftsQuery
+    )
+  : [];
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const textResults = textRows.map((r) => ({
+  ...r,
+  snipHtml: r.snip ? esc(r.snip).split("@@H@@").join("<mark>").split("@@/H@@").join("</mark>") : "",
+}));
+
+// The headline count reports only confident matches. Chapter-only rows are
+// reported separately so a vague "somewhere in this chapter" never inflates it.
+const confident = taughtFrom.length + alsoRefs.length + textResults.length;
+const refLabel = ref ? ref.ref_text.replace(/\s+/g, " ") : "";
+const chapterLabel = ref ? `${ref.book} ${ref.chapter}` : "";
+const chapterHref = ref ? `/search?q=${encodeURIComponent(chapterLabel)}` : "";
+const nothingAtAll = q !== "" && confident === 0 && chapterOnly.length === 0;
+---
+
+<Base title={q ? `Search: ${q}` : "Search"} description="Search every message by scripture reference, title, or anything said in the transcript.">
+  <section class="section container" style="max-width:900px">
+    <h1>Search</h1>
+
+    <form method="GET" class="searchbar card">
+      <input id="q" name="q" value={q} autofocus autocomplete="off"
+             aria-label="Search messages"
+             placeholder="A verse like “Hebrews 7:1”, a title, or anything said…" />
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+    <p class="hint muted">
+      Type a reference such as <a href="/search?q=Hebrews+7%3A1">Hebrews 7:1</a> to find every message that
+      teaches or cites that verse, or <a href="/scripture">browse by book</a>.
+    </p>
+
+    {q && (
+      <p class="muted resultline">
+        <span>
+          {confident === 0 ? "No direct matches for " : `${confident} result${confident === 1 ? "" : "s"} for `}
+          <strong>{ref ? refLabel : q}</strong>
+          {chapterOnly.length > 0 && (
+            <span>{" · "}{chapterOnly.length} more somewhere in {chapterLabel}</span>
+          )}
+        </span>
+        {ref && <span class="badge">scripture reference</span>}
+        <a href="/search" class="clearq">Clear</a>
+      </p>
+    )}
+
+    {nothingAtAll && (
+      <p class="muted">
+        Nothing matched.
+        {ref
+          ? <span> Try the whole chapter — <a href={chapterHref}>{chapterLabel}</a>.</span>
+          : <span> Try fewer words, or a phrase you remember hearing in the message.</span>}
+      </p>
+    )}
+
+    {taughtFrom.length > 0 && (
+      <>
+        <h2 class="grp">Taught from {refLabel} <span class="n">{taughtFrom.length}</span></h2>
+        <div class="list">{taughtFrom.map((it) => <ResultRow it={it} />)}</div>
+      </>
+    )}
+
+    {alsoRefs.length > 0 && (
+      <>
+        <h2 class="grp">Also references {refLabel} <span class="n">{alsoRefs.length}</span></h2>
+        <div class="list">{alsoRefs.map((it) => <ResultRow it={it} />)}</div>
+      </>
+    )}
+
+    {chapterOnly.length > 0 && (
+      <details class="maybe">
+        <summary>
+          <span class="grp-t">Elsewhere in {chapterLabel}</span>
+          <span class="n">{chapterOnly.length}</span>
+          <span class="why">verse not indexed — may not cover {refLabel}</span>
+        </summary>
+        <div class="list">{chapterOnly.map((it) => <ResultRow it={it} />)}</div>
+      </details>
+    )}
+
+    {textResults.length > 0 && (
+      <div class="list" style="margin-top:14px">{textResults.map((it) => <ResultRow it={it} />)}</div>
+    )}
+  </section>
+</Base>
+
+<style>
+  .searchbar { display: flex; gap: 10px; align-items: center; padding: 14px; }
+  .searchbar input { flex: 1; min-width: 0; }
+  .hint { font-size: .88rem; margin: 8px 2px 0; }
+  .resultline { margin-top: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .clearq { font-size: .85rem; margin-left: auto; }
+  .grp, .grp-t { font-size: 1.02rem; font-weight: 700; }
+  .grp { margin: 24px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .n { font-size: .78rem; font-weight: 600; color: var(--text-soft); background: var(--border); border-radius: 999px; padding: 1px 8px; }
+  .maybe { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .maybe summary { cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .maybe .why { font-size: .82rem; color: var(--text-soft); font-style: italic; }
+  .maybe .list { margin-top: 12px; }
+  @media (max-width: 560px) { .searchbar { flex-direction: column; align-items: stretch; } }
+</style>

@@ -1,0 +1,47 @@
+---
+import { CATEGORY_LABEL, fmtDate } from "@lib/catalog";
+
+// One result row, shared by every group on /search so the groups stay visually
+// identical. `hits` is the set of matching scripture refs (scripture mode);
+// `snipHtml` is a pre-escaped FTS excerpt (text mode). A row has one or neither.
+interface Props {
+  it: {
+    slug: string; title: string; category: string; recorded_on: string;
+    passage_ref: string; series_part: string; speaker_name: string;
+    collection_title: string; has_transcript: number;
+    hits?: string | null; snipHtml?: string;
+  };
+}
+const { it } = Astro.props;
+const hits = it.hits ? [...new Set(it.hits.split(",").map((h) => h.trim()).filter(Boolean))].slice(0, 6) : [];
+---
+
+<a class="card row" href={`/listen/${it.slug}`}>
+  <div class="row-main">
+    <div class="row-tags">
+      <span class="badge badge-cat">{CATEGORY_LABEL[it.category] ?? it.category}</span>
+      {it.collection_title && <span class="badge">{it.collection_title}</span>}
+      {it.series_part && <span class="badge badge-part">{it.series_part}</span>}
+      {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
+    </div>
+    <h3 style="margin:6px 0 2px">{it.title}</h3>
+    {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
+    {hits.length > 0 && (
+      <p class="hits">{hits.map((h) => <span class="hit">{h}</span>)}</p>
+    )}
+    {it.snipHtml && <p class="row-snip" set:html={it.snipHtml} />}
+    <p class="muted" style="margin:2px 0 0">{it.speaker_name}</p>
+  </div>
+  <span class="muted date">{fmtDate(it.recorded_on)}</span>
+</a>
+
+<style>
+  .hits { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 5px; }
+  .hit {
+    font-size: .76rem; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+    color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  }
+  .row-snip { margin: 6px 0 0; font-size: .9rem; line-height: 1.5; color: var(--text-soft); }
+  .row-snip :global(mark) { background: color-mix(in srgb, var(--brand) 24%, transparent); color: var(--text); padding: 0 1px; border-radius: 2px; }
+</style>
