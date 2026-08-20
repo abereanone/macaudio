@@ -7,6 +7,51 @@ series_part (short label of where the message falls in a structured series, e.g.
 for duplicates the auto-dedupe can't catch because the filenames are unrelated).
 """
 OVERRIDES = {
+    # --- Raw-recorder duplicates (DM6204xx) -----------------------------
+    # Same recordings as already-published, properly titled sermons; the
+    # recorder filenames are unrelated to the titles, so the (title, year)
+    # dedupe cannot merge them. Confirmed by transcript match + duration
+    # (34 of 40 matched to the second). Removed from D1 and R2 2026-08-20.
+    "DM620421": {"drop": True},  # dup of "The First Commandment - Part 2"
+    "DM620425": {"drop": True},  # dup of "Idols are Worthless"
+    "DM620428": {"drop": True},  # dup of "Hunger and Thirst"
+    "DM620429": {"drop": True},  # dup of "10 Commandments Intro"
+    "DM620430": {"drop": True},  # dup of "Forms of Blasphemy"
+    "DM620431": {"drop": True},  # dup of "Remember the Sabbath"
+    "DM620432": {"drop": True},  # dup of "Sticks and Stones"
+    "DM620437": {"drop": True},  # dup of "Profaning the Sabbath - Part 1"
+    "DM620439": {"drop": True},  # dup of "Abortion and the Bible"
+    "DM620440": {"drop": True},  # dup of "The Sunday Sabbath"
+    "DM620441": {"drop": True},  # dup of "Did Jesus Break the 5th?"
+    "DM620442": {"drop": True},  # dup of "The 5th Commandment Applied"
+    "DM620443": {"drop": True},  # dup of "Submission is for Adults Too"
+    "DM620445": {"drop": True},  # dup of "Love One Another"
+    "DM620446": {"drop": True},  # dup of "Providence"
+    "DM620448": {"drop": True},  # dup of "Humility is the Key"
+    "DM620449": {"drop": True},  # dup of "We Should Not Be Like Cain"
+    "DM620451": {"drop": True},  # dup of "Sanctuary Cities"
+    "DM620453": {"drop": True},  # dup of "Reconcilation"
+    "DM620455": {"drop": True},  # dup of "Racism, Abortion, Gossip, Suicide"
+    "DM620458": {"drop": True},  # dup of "Lust of the Eye"
+    "DM620463": {"drop": True},  # dup of "God Hates Divorce"
+    "DM620466": {"drop": True},  # dup of "Every One"
+    "DM620467": {"drop": True},  # dup of "Stealing from God?"
+    "DM620468": {"drop": True},  # dup of "We Are All Witnesses"
+    "DM620469": {"drop": True},  # dup of "How to Define Lying"
+    "DM620470": {"drop": True},  # dup of "10 Commandments Intro"
+    "DM620472": {"drop": True},  # dup of "When Lust Conceives"
+    "DM620473": {"drop": True},  # dup of "Seek the Kingdom"
+    "DM620474": {"drop": True},  # dup of "Providence"
+    "DM620476": {"drop": True},  # dup of "Godliness Actually Is Gain"
+    "DM620477": {"drop": True},  # dup of "Elder Qualifications - Part 1"
+    "DM620480": {"drop": True},  # dup of "Anger"
+    "DM620481": {"drop": True},  # dup of "Omnipresence"
+    "DM620482": {"drop": True},  # dup of "Omniscience"
+    "DM620483": {"drop": True},  # dup of "Prophecy"
+    "DM620487": {"drop": True},  # dup of "Anger"
+    "DM620351": {"drop": True},  # dup of "Who is Puffed Up With Conceit"
+    "DM620384": {"drop": True},  # dup of "The Law of God 1689 Chapter 19"
+    "DM620450": {"drop": True},  # dup of "Hebrews - Part 13 Dull of Hearing (Hebrews 5:8-14)"
     # Duplicate recording of "Elder Qualifications - Part 2" (2022-06-12), saved
     # under the raw recorder name DM620479.MP3. The titles are unrelated so the
     # (title, year) dedupe can't merge it — drop it explicitly.

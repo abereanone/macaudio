@@ -42,3 +42,8 @@ tools/extract_refs.py
 tools/fix_passage.py
 tools/passage_audit.csv
 tools/scripture.py
+
+# one-time dedupe artifacts (contain local absolute paths)
+db/dm_dupes_manifest.txt
+db/dm_overrides_snippet.py
+tools/delete_dm_dupes.bat
