@@ -19,7 +19,25 @@ const refs = q ? parseRefs(q) : [];
 // Treat it as a scripture lookup only when the reference IS the whole query,
 // not when a verse happens to appear inside a longer sentence.
 const bare = q.replace(/[\s,;]+/g, " ").trim().toLowerCase();
-const ref = refs.length === 1 && refs[0].ref_text.replace(/\s+/g, " ").toLowerCase() === bare ? refs[0] : null;
+const bibleRef = refs.length === 1 && refs[0].ref_text.replace(/\s+/g, " ").toLowerCase() === bare ? refs[0] : null;
+
+// The confession is referenced the same way a verse is -- "LBCF 22.7" is chapter
+// 22, paragraph 7 -- so the lessons that teach it are stored in scripture_refs
+// under book 'LBCF' and resolved by the same chapter/verse machinery below.
+// (The /scripture book grid only renders canonical OT/NT books, so these never
+// appear there.) Accepts "LBCF 22.7", "1689 22.7", "confession 22".
+const LBCF_RE = /^(?:lbcf|1689(?:\s+lbcf)?|(?:the\s+)?confession)\s*(?:ch(?:apter)?\.?\s*)?(\d{1,2})(?:\s*[.:]\s*(?:p(?:ara(?:graph)?)?\.?\s*)?(\d{1,2}))?$/i;
+const lbcf = LBCF_RE.exec(bare);
+const ref = bibleRef ?? (lbcf
+  ? {
+      book: "LBCF",
+      chapter: parseInt(lbcf[1], 10),
+      verse_start: lbcf[2] ? parseInt(lbcf[2], 10) : null,
+      verse_end: null,
+      ref_text: `LBCF ${lbcf[1]}${lbcf[2] ? `.${lbcf[2]}` : ""}`,
+    }
+  : null);
+const isLbcf = !bibleRef && !!lbcf;
 
 const vLo = ref?.verse_start ?? null;
 const vHi = ref?.verse_end ?? ref?.verse_start ?? null;
@@ -120,12 +138,13 @@ const nothingAtAll = q !== "" && confident === 0 && chapterOnly.length === 0;
     <form method="GET" class="searchbar card">
       <input id="q" name="q" value={q} autofocus autocomplete="off"
              aria-label="Search messages"
-             placeholder="A verse like “Hebrews 7:1”, a title, or anything said…" />
+             placeholder="A verse like “Hebrews 7:1”, “LBCF 22.7”, a title, or anything said…" />
       <button class="btn btn-primary" type="submit">Search</button>
     </form>
     <p class="hint muted">
       Type a reference such as <a href="/search?q=Hebrews+7%3A1">Hebrews 7:1</a> to find every message that
-      teaches or cites that verse, or <a href="/scripture">browse by book</a>.
+      teaches or cites that verse, <a href="/search?q=LBCF+22.7">LBCF 22.7</a> for the confession, or
+      <a href="/scripture">browse by book</a>.
     </p>
 
     {q && (
@@ -137,7 +156,7 @@ const nothingAtAll = q !== "" && confident === 0 && chapterOnly.length === 0;
             <span>{" · "}{chapterOnly.length} more somewhere in {chapterLabel}</span>
           )}
         </span>
-        {ref && <span class="badge">scripture reference</span>}
+        {ref && <span class="badge">{isLbcf ? "confession" : "scripture reference"}</span>}
         <a href="/search" class="clearq">Clear</a>
       </p>
     )}
