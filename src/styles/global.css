@@ -113,6 +113,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-300);
 .badge-cat { color: var(--accent); border-color: #d8a65755; background: #d8a65714; }
 /* Series position (e.g. which commandment a sermon expounds). */
 .badge-part { color: var(--brand); border-color: var(--brand-300); background: color-mix(in srgb, var(--brand) 10%, transparent); }
+/* Video badge in YouTube red so it reads at a glance down a long list. #C00
+   rather than #F00: this is text and needs 4.5:1 on white, which pure red
+   misses at 4.0:1. Lives here, not in a component, because both row renderers
+   (index.astro and ResultRow.astro) use it and Astro scopes component styles. */
+.badge-video { color: #fff; background: #cc0000; border-color: #cc0000; }
 
 /* Hero */
 /* Hero is a dark green band in BOTH themes (matches the emblem/OG branding),

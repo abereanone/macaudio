@@ -9,6 +9,7 @@ interface Props {
     slug: string; title: string; category: string; recorded_on: string;
     passage_ref: string; series_part: string; speaker_name: string;
     collection_title: string; has_transcript: number;
+    has_video?: number; has_files?: number;
     hits?: string | null; snipHtml?: string;
   };
 }
@@ -23,6 +24,8 @@ const hits = it.hits ? [...new Set(it.hits.split(",").map((h) => h.trim()).filte
       {it.collection_title && <span class="badge">{it.collection_title}</span>}
       {it.series_part && <span class="badge badge-part">{it.series_part}</span>}
       {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
+      {it.has_video ? <span class="badge badge-video">📺 video</span> : null}
+      {it.has_files ? <span class="badge">📎 handout</span> : null}
     </div>
     <h3 style="margin:6px 0 2px">{it.title}</h3>
     {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
@@ -36,6 +39,8 @@ const hits = it.hits ? [...new Set(it.hits.split(",").map((h) => h.trim()).filte
 </a>
 
 <style>
+  /* .badge-video lives in global.css — index.astro renders its own rows and
+     needs the same rule, and Astro scopes component styles. */
   .hits { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 5px; }
   .hit {
     font-size: .76rem; font-weight: 600; padding: 1px 7px; border-radius: 999px;

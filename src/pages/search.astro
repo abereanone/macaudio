@@ -46,13 +46,15 @@ const verseMode = vLo !== null;
 type Row = {
   id: number; slug: string; title: string; category: string; recorded_on: string;
   passage_ref: string; series_part: string; speaker_name: string; collection_title: string;
-  has_transcript: number; hits: string | null;
+  has_transcript: number; has_video: number; has_files: number; hits: string | null;
   primary_precise: number; any_precise: number; any_primary: number;
 };
 
 const ROW_COLS = `i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
                   sp.name AS speaker_name, co.title AS collection_title,
-                  (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript`;
+                  (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript,
+                  (i.video_url IS NOT NULL) AS has_video,
+                  (SELECT COUNT(*) FROM item_files f WHERE f.item_id = i.id) AS has_files`;
 const ROW_JOINS = `LEFT JOIN speakers sp ON sp.id = i.speaker_id
                    LEFT JOIN collections co ON co.id = i.collection_id`;
 

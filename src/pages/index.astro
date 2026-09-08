@@ -30,12 +30,14 @@ const orderBy = ftsQuery ? "bm25(item_fts)" : "i.recorded_on DESC, i.id DESC";
 const items = await all<{
   id: number; slug: string; title: string; category: string; recorded_on: string;
   passage_ref: string; series_part: string; speaker_name: string; speaker_slug: string; collection_title: string;
-  has_transcript: number; snip: string | null;
+  has_transcript: number; has_video: number; has_files: number; snip: string | null;
 }>(
   db,
   `SELECT i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
           sp.name AS speaker_name, sp.slug AS speaker_slug, co.title AS collection_title,
           (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript,
+          (i.video_url IS NOT NULL) AS has_video,
+          (SELECT COUNT(*) FROM item_files f WHERE f.item_id = i.id) AS has_files,
           ${snipExpr} AS snip
    FROM items i
    LEFT JOIN speakers sp ON sp.id = i.speaker_id
@@ -105,6 +107,8 @@ const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
                 {it.collection_title && <span class="badge">{it.collection_title}</span>}
                 {it.series_part && <span class="badge badge-part">{it.series_part}</span>}
                 {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
+                {it.has_video ? <span class="badge badge-video">📺 video</span> : null}
+                {it.has_files ? <span class="badge">📎 handout</span> : null}
               </div>
               <h3 style="margin:6px 0 2px">{it.title}</h3>
               {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
