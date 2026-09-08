@@ -47,3 +47,7 @@ tools/scripture.py
 db/dm_dupes_manifest.txt
 db/dm_overrides_snippet.py
 tools/delete_dm_dupes.bat
+
+# Generated Word docs (make_docs.py) and the old media scratch folder
+tools/*.docx
+.videos/
