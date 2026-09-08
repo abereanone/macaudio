@@ -22,8 +22,17 @@ Flags (all optional; anything not passed is prompted for):
   --audio PATH  --title T  --series S  --part P  --date YYYY-MM-DD
   --passage REF  --category sermon|class|conference|open_air|podcast
   --speaker NAME  --no-transcript   audio + item only, index transcript later
+  --video URL      link to video of the same message
+  --notes PATH[:Title]   downloadable handout; repeatable
+  --duration MM:SS       only needed for a video-only item
   --local          write to the LOCAL dev D1 instead of production
   --dry-run        show the slug, R2 command, and SQL; write nothing
+
+VIDEO-ONLY items: pass --video with no --audio for a message that exists only
+on someone's YouTube channel — a guest spot, a conference talk, a street-
+preaching clip. The item gets r2_key and source_path NULL, skips both the R2
+upload and transcription, and the site renders the video link where the player
+would be. Everything else (search, scripture index, series) works normally.
 """
 from __future__ import annotations
 
@@ -43,6 +52,7 @@ import scripture  # noqa: E402
 from transcribe_groq import (  # noqa: E402
     build_prompt, load_dev_vars, split_chunks, transcribe_chunk,
 )
+from attach_extras import valid_video_url  # noqa: E402
 from textfmt import paragraphize  # noqa: E402
 
 WIN = sys.platform == "win32"
@@ -97,6 +107,22 @@ def d1(command: str | None, remote: bool, file: Path | None = None, capture=True
     return json.loads(out.stdout[out.stdout.index("["):])
 
 
+def parse_duration(s: str | None) -> int | None:
+    """'53:25' / '1:04:25' / '3205' -> seconds. Video-only items have no file to
+    probe, so the length comes from the flag (or stays unknown)."""
+    if not s:
+        return None
+    parts = s.strip().split(":")
+    try:
+        nums = [int(p) for p in parts]
+    except ValueError:
+        sys.exit(f"--duration must be seconds or MM:SS or HH:MM:SS, got {s!r}")
+    total = 0
+    for n in nums:
+        total = total * 60 + n
+    return total
+
+
 def probe_duration(p: Path) -> int | None:
     try:
         out = subprocess.run(
@@ -109,11 +135,27 @@ def probe_duration(p: Path) -> int | None:
         return None
 
 
+SLUG_MAX = 60
+
+
+def trim_slug(base: str) -> str:
+    """Cap a slug at SLUG_MAX chars on a word boundary. Some titles are a full
+    sentence ('... Talk 1 from the Conference on The Stewardship of Scripture
+    2025'), and the raw slug makes an unreadable URL."""
+    if len(base) <= SLUG_MAX:
+        return base
+    cut = base[:SLUG_MAX]
+    return (cut.rsplit("-", 1)[0] if "-" in cut else cut).strip("-")
+
+
 def unique_slug(base: str, remote: bool, dry: bool) -> str:
     if dry:
         return base
+    # substr(), not LIKE: D1 rejects LIKE patterns over 50 chars with
+    # "LIKE or GLOB pattern too complex", which any long title would trip.
     taken = {r["slug"] for r in
-             (d1(f"SELECT slug FROM items WHERE slug LIKE {q(base + '%')}", remote) or [{}])[0].get("results", [])}
+             (d1(f"SELECT slug FROM items WHERE substr(slug, 1, {len(base)}) = {q(base)}",
+                 remote) or [{}])[0].get("results", [])}
     slug, n = base, 1
     while slug in taken:
         n += 1
@@ -166,6 +208,9 @@ def main() -> None:
     p.add_argument("--category")
     p.add_argument("--speaker")
     p.add_argument("--no-transcript", action="store_true")
+    p.add_argument("--video", default=None, help="link to video of this message")
+    p.add_argument("--notes", action="append", default=[], metavar="PATH[:Title]")
+    p.add_argument("--duration", default=None, help="MM:SS or seconds (video-only items)")
     p.add_argument("--local", action="store_true", help="write to local dev D1, not production")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
@@ -173,10 +218,24 @@ def main() -> None:
     dry = a.dry_run
 
     # --- collect metadata (prompt for anything not passed) ---
-    audio = a.audio or ask("Audio file", required=True)
-    src = Path(audio.strip('"'))
-    if not dry and (not src.exists() or src.suffix.lower() not in AUDIO_EXTS):
+    # An item needs audio OR a video link. Video-only covers messages that live
+    # on someone else's channel and were never recorded to audio here.
+    video = a.video
+    if a.audio is not None:
+        audio = a.audio
+    elif video:
+        audio = None          # --video given: video-only, don't ask for audio
+    else:
+        audio = ask("Audio file (blank if this is video-only)")
+    src: Path | None = Path(audio.strip('"')) if audio else None
+    if src is None:
+        if not video:
+            video = ask("Video URL", required=True)
+    elif not dry and (not src.exists() or src.suffix.lower() not in AUDIO_EXTS):
         sys.exit(f"Not an audio file that exists: {src}")
+
+    if video:
+        video = valid_video_url(video.strip()) if video.strip() else None
 
     title = a.title or ask("Title", required=True)
     series = a.series if a.series is not None else ask("Series (blank for none)")
@@ -188,18 +247,30 @@ def main() -> None:
         sys.exit(f"category must be one of {sorted(CATEGORIES)}")
     speaker = a.speaker or ask("Speaker", default=DEFAULT_SPEAKER)
 
-    ext = src.suffix.lower()
-    duration = probe_duration(src) if src.exists() else None
-    base = slugify(f"{recorded}-{title}" if recorded else title)
+    # Interactive `ask()` turns a blank answer into None, but an explicit
+    # --passage "" from a script would otherwise store an empty string. Keep the
+    # two paths writing the same thing: absent means NULL.
+    series = series or None
+    part = part or None
+    passage = passage or None
+
+    ext = src.suffix.lower() if src else ""
+    duration = probe_duration(src) if (src and src.exists()) else parse_duration(a.duration)
+    base = trim_slug(slugify(f"{recorded}-{title}" if recorded else title))
     slug = unique_slug(base, remote, dry)
-    r2_key = f"audio/{category}/{slug}{ext}"
+    # No audio -> no R2 object and no source file to be idempotent against.
+    # source_path is UNIQUE, but SQLite allows many NULLs in a UNIQUE column, so
+    # video-only items don't collide with each other.
+    r2_key = f"audio/{category}/{slug}{ext}" if src else None
     coll_slug = slugify(series) if series else None
 
     print(f"\n  slug       {slug}")
-    print(f"  r2_key     {r2_key}")
+    print(f"  r2_key     {r2_key or '(none — video-only)'}")
+    print(f"  video      {video or '(none)'}")
     print(f"  duration   {duration if duration is not None else '?'} sec")
     print(f"  series     {series or '(none)'}   part {part or '(none)'}")
-    print(f"  target     {'PRODUCTION (remote)' if remote else 'local dev'} D1 + R2\n")
+    print(f"  target     {'PRODUCTION (remote)' if remote else 'local dev'} D1"
+          f"{' + R2' if src or a.notes else ''}\n")
 
     # --- build the insert SQL ---
     sql = []
@@ -216,28 +287,33 @@ def main() -> None:
     # the attach step below). Do not INSERT into item_fts here — it would double.
     sql.append(
         "INSERT INTO items (slug, title, category, speaker_id, collection_id, recorded_on, "
-        "passage_ref, r2_key, duration_sec, source_path, transcript_status, series_part) VALUES ("
+        "passage_ref, r2_key, duration_sec, source_path, transcript_status, series_part, video_url) VALUES ("
         f"{q(slug)}, {q(title)}, {q(category)}, {spk_expr}, {coll_expr}, {q(recorded)}, "
-        f"{q(passage)}, {q(r2_key)}, {q(duration)}, {q(str(src))}, 'none', {q(part)});")
+        f"{q(passage)}, {q(r2_key)}, {q(duration)}, {q(str(src) if src else None)}, 'none', "
+        f"{q(part)}, {q(video)});")
     sql_text = "\n".join(sql) + "\n"
 
     r2_cmd = ["npx", "wrangler", "r2", "object", "put", f"{BUCKET}/{r2_key}",
               "--file", str(src), "--content-type", CT.get(ext, "application/octet-stream"),
-              "--cache-control", CACHE] + (["--remote"] if remote else [])
+              "--cache-control", CACHE] + (["--remote"] if remote else []) if src else None
 
     if dry:
-        print("--- DRY RUN: would upload ---\n  " + " ".join(r2_cmd))
+        print("--- DRY RUN: would upload ---\n  "
+              + (" ".join(r2_cmd) if r2_cmd else "(nothing — video-only item)"))
         print("\n--- DRY RUN: would execute SQL ---\n" + sql_text)
-        print(f"--- then {'transcribe + index' if not a.no_transcript else 'skip transcript'} ---")
+        if a.notes:
+            print("--- then attach_extras.py for: " + ", ".join(a.notes) + " ---")
+        print(f"--- then {'transcribe + index' if not a.no_transcript and src else 'skip transcript'} ---")
         return
 
-    # --- 1) upload audio to R2 ---
-    print("uploading audio to R2 ...")
-    up = subprocess.run(r2_cmd, cwd=REPO, shell=WIN, env=cf_env(),
-                        capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if up.returncode != 0:
-        sys.exit("R2 upload failed:\n" + (up.stderr or up.stdout))
-    print("  uploaded.")
+    # --- 1) upload audio to R2 (video-only items have nothing to upload) ---
+    if r2_cmd:
+        print("uploading audio to R2 ...")
+        up = subprocess.run(r2_cmd, cwd=REPO, shell=WIN, env=cf_env(),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if up.returncode != 0:
+            sys.exit("R2 upload failed:\n" + (up.stderr or up.stdout))
+        print("  uploaded.")
 
     # --- 2) insert item (+ collection/speaker + title search row) ---
     print(f"inserting item into {'remote' if remote else 'local'} D1 ...")
@@ -247,8 +323,23 @@ def main() -> None:
     sql_file.unlink(missing_ok=True)
     print("  item is live.")
 
-    # --- 3) transcribe + index (delegated to attach_transcript.py) ---
-    if not a.no_transcript:
+    # --- 3) attach handouts (delegated to attach_extras.py) ---
+    if a.notes:
+        cmd = [sys.executable, str(HERE / "attach_extras.py"), "--slug", slug]
+        for n in a.notes:
+            cmd += ["--notes", n]
+        if remote:
+            cmd += ["--remote"]
+        print("attaching handouts ...")
+        if subprocess.run(cmd, cwd=REPO, env=cf_env()).returncode != 0:
+            print("  handout step failed — item is still live; rerun later:  "
+                  f"python tools/attach_extras.py --slug {slug}"
+                  + (" --remote" if remote else ""))
+
+    # --- 4) transcribe + index (delegated to attach_transcript.py) ---
+    # Video-only items have no audio to transcribe; the title still reaches
+    # item_fts via the 0003 insert trigger, so they stay searchable.
+    if not a.no_transcript and src:
         transcribe_file(src)
         cmd = [sys.executable, str(HERE / "attach_transcript.py"), "--slug", slug]
         if passage:
