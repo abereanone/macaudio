@@ -1,0 +1,12 @@
+-- Per-item link to a video of the same message (YouTube, Rumble, Vimeo,
+-- Facebook, a church's own player — anything). Deliberately generic: we store
+-- the URL only and derive the button label from the host at render time, so a
+-- link to a new platform needs no schema or code change.
+--
+-- NOT a platform/embed_id pair: those are derivable from the URL, and a stored
+-- copy only goes stale when a link is corrected.
+--
+-- Does not affect item_fts. The 0003_fts_sync triggers fire on
+-- `UPDATE OF title, passage_ref, speaker_id` only, so adding this column cannot
+-- desync search.
+ALTER TABLE items ADD COLUMN video_url TEXT;

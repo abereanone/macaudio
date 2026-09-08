@@ -1,7 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getDB, one, all } from "@lib/db";
-import { CATEGORY_LABEL, fmtDate } from "@lib/catalog";
+import { CATEGORY_LABEL, fmtDate, safeHttpUrl, videoLabel, fmtBytes } from "@lib/catalog";
 
 const env = Astro.locals.runtime.env;
 const db = getDB(Astro.locals);
@@ -10,7 +10,7 @@ const slug = Astro.params.slug ?? "";
 const item = await one<{
   id: number; title: string; category: string; recorded_on: string; passage_ref: string;
   series_part: string; description: string; r2_key: string; speaker_name: string; speaker_slug: string;
-  collection_title: string; collection_slug: string;
+  collection_title: string; collection_slug: string; video_url: string;
 }>(
   db,
   `SELECT i.*, sp.name AS speaker_name, sp.slug AS speaker_slug,
@@ -33,9 +33,15 @@ const refs = await all<{ book: string; chapter: number; verse_start: number; ver
   db, `SELECT book, chapter, verse_start, verse_end, is_primary FROM scripture_refs WHERE item_id=? ORDER BY is_primary DESC, book, chapter, verse_start`, item.id
 );
 const transcript = await one<{ text: string }>(db, `SELECT text FROM item_transcripts WHERE item_id=?`, item.id);
+const files = await all<{ id: number; kind: string; title: string; r2_key: string; size_bytes: number }>(
+  db, `SELECT id, kind, title, r2_key, size_bytes FROM item_files WHERE item_id=? ORDER BY sort, id`, item.id
+);
 
 const encodeKey = (k: string) => k.split("/").map(encodeURIComponent).join("/");
 const audioUrl = item.r2_key && env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(item.r2_key)}` : null;
+// Served from the same R2 custom domain as the audio; keys are files/<slug>/<name>.
+const fileUrl = (k: string) => (env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(k)}` : null);
+const videoUrl = safeHttpUrl(item.video_url);
 const shareUrl = new URL(Astro.url.pathname, Astro.site).href;
 
 function fmtRef(r: { book: string; chapter: number | null; verse_start: number | null; verse_end: number | null }): string {
@@ -83,11 +89,34 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
         <div class="muted no-audio">Audio isn't available for this message — transcript below.</div>
       )}
       <div class="actions">
+        {videoUrl && (
+          <a class="btn btn-primary btn-sm" href={videoUrl} target="_blank" rel="noopener noreferrer">
+            ▶ {videoLabel(videoUrl)}
+          </a>
+        )}
         {audioUrl && <a class="btn btn-outline btn-sm" href={audioUrl} download>⤓ Download</a>}
         <button class="btn btn-outline btn-sm" type="button" data-copy={shareUrl}>🔗 Copy link</button>
         <button class="btn btn-outline btn-sm" type="button" data-share={shareUrl} data-title={item.title}>↗ Share</button>
       </div>
     </div>
+
+    {files.length > 0 && (
+      <div class="downloads">
+        <span class="eyebrow">Handouts &amp; outlines</span>
+        <div class="dl-list">
+          {files.map((f) => {
+            const href = fileUrl(f.r2_key);
+            const ext = f.r2_key.split(".").pop()?.toUpperCase() ?? "";
+            return href ? (
+              <a class="btn btn-outline btn-sm dl" href={href} download>
+                ⤓ {f.title}
+                <span class="dl-meta">{[ext, fmtBytes(f.size_bytes)].filter(Boolean).join(" · ")}</span>
+              </a>
+            ) : null;
+          })}
+        </div>
+      </div>
+    )}
 
     {transcriptParas.length > 0 && (
       <section class="reading">
@@ -139,6 +168,10 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   }
   .no-audio { flex: 1 1 240px; font-size: .92rem; font-style: italic; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .downloads { margin: 16px 0 4px; }
+  .dl-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .dl { display: inline-flex; align-items: baseline; gap: 8px; }
+  .dl-meta { font-size: .74rem; color: var(--text-soft); letter-spacing: .02em; }
   .reading { margin-top: 28px; }
   .reading h2 { margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .transcript p { margin: 0 0 1.15em; font-size: 1.08rem; line-height: 1.85; }
