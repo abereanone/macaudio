@@ -5,6 +5,9 @@ export const CATEGORIES: { key: string; label: string }[] = [
   { key: "conference", label: "Conferences" },
   { key: "open_air", label: "Open-Air Preaching" },
   { key: "podcast", label: "Be A Berean (Podcast)" },
+  // Michael as a GUEST on someone else's show. Deliberately separate from
+  // "podcast", which means Be A Berean — his own programme.
+  { key: "interview", label: "Interviews & Guest Appearances" },
 ];
 
 export const CATEGORY_LABEL: Record<string, string> =

@@ -60,7 +60,7 @@ BUCKET = "macaudio"
 DB = "macaudio"
 DEFAULT_SPEAKER = "Michael Coughlin"
 AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".flac"}
-CATEGORIES = {"sermon", "class", "conference", "open_air", "podcast"}
+CATEGORIES = {"sermon", "class", "conference", "open_air", "podcast", "interview"}
 CT = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav", ".flac": "audio/flac"}
 CACHE = "public, max-age=31536000, immutable"
 
@@ -212,8 +212,16 @@ def main() -> None:
     p.add_argument("--notes", action="append", default=[], metavar="PATH[:Title]")
     p.add_argument("--duration", default=None, help="MM:SS or seconds (video-only items)")
     p.add_argument("--local", action="store_true", help="write to local dev D1, not production")
+    # This tool writes to production by DEFAULT, while attach_extras.py and
+    # attach_transcript.py default to local and need --remote. Accepting a
+    # no-op --remote here means "--remote" is safe to pass to any of the three
+    # and always means production — the scripted paths were otherwise a trap.
+    p.add_argument("--remote", action="store_true",
+                   help="production D1 + R2 (the default here; accepted for symmetry)")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
+    if a.local and a.remote:
+        sys.exit("Pass --local or --remote, not both.")
     remote = not a.local
     dry = a.dry_run
 
