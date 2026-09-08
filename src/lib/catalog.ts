@@ -17,12 +17,12 @@ export const CATEGORY_LABEL: Record<string, string> =
 // items.video_url holds a bare URL and nothing else; the platform is derived
 // here at render time. Adding a new host means adding a line below, not a
 // migration.
-const VIDEO_HOSTS: { match: RegExp; label: string }[] = [
-  { match: /(^|\.)(youtube\.com|youtu\.be)$/i, label: "Watch on YouTube" },
-  { match: /(^|\.)rumble\.com$/i, label: "Watch on Rumble" },
-  { match: /(^|\.)vimeo\.com$/i, label: "Watch on Vimeo" },
-  { match: /(^|\.)(facebook\.com|fb\.watch)$/i, label: "Watch on Facebook" },
-  { match: /(^|\.)sermonaudio\.com$/i, label: "Watch on SermonAudio" },
+const VIDEO_HOSTS: { match: RegExp; label: string; platform: string }[] = [
+  { match: /(^|\.)(youtube\.com|youtu\.be)$/i, label: "Watch on YouTube", platform: "youtube" },
+  { match: /(^|\.)rumble\.com$/i, label: "Watch on Rumble", platform: "rumble" },
+  { match: /(^|\.)vimeo\.com$/i, label: "Watch on Vimeo", platform: "vimeo" },
+  { match: /(^|\.)(facebook\.com|fb\.watch)$/i, label: "Watch on Facebook", platform: "facebook" },
+  { match: /(^|\.)sermonaudio\.com$/i, label: "Watch on SermonAudio", platform: "sermonaudio" },
 ];
 
 /**
@@ -48,6 +48,19 @@ export function videoLabel(url: string): string {
     return VIDEO_HOSTS.find((h) => h.match.test(host))?.label ?? "Watch video";
   } catch {
     return "Watch video";
+  }
+}
+
+/**
+ * Platform slug ("youtube", "rumble", …) or "" when the host isn't recognised.
+ * Used as a CSS hook so a link can wear its platform's colour.
+ */
+export function videoPlatform(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return VIDEO_HOSTS.find((h) => h.match.test(host))?.platform ?? "";
+  } catch {
+    return "";
   }
 }
 

@@ -1,7 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getDB, one, all } from "@lib/db";
-import { CATEGORY_LABEL, fmtDate, safeHttpUrl, videoLabel, fmtBytes } from "@lib/catalog";
+import { CATEGORY_LABEL, fmtDate, safeHttpUrl, videoLabel, videoPlatform, fmtBytes } from "@lib/catalog";
 
 const env = Astro.locals.runtime.env;
 const db = getDB(Astro.locals);
@@ -42,6 +42,8 @@ const audioUrl = item.r2_key && env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${en
 // Served from the same R2 custom domain as the audio; keys are files/<slug>/<name>.
 const fileUrl = (k: string) => (env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(k)}` : null);
 const videoUrl = safeHttpUrl(item.video_url);
+// "" for an unrecognised host, which falls through to the default brand colour.
+const videoPlat = videoUrl ? videoPlatform(videoUrl) : "";
 const shareUrl = new URL(Astro.url.pathname, Astro.site).href;
 
 function fmtRef(r: { book: string; chapter: number | null; verse_start: number | null; verse_end: number | null }): string {
@@ -89,7 +91,8 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
         /* Video-only item (a talk that exists on YouTube but was never recorded
            to audio here). The link is the main event, not a footnote, so it gets
            the player's slot rather than sitting in the button row below. */
-        <a class="video-only" href={videoUrl} target="_blank" rel="noopener noreferrer">
+        <a class={`video-only${videoPlat ? ` plat-${videoPlat}` : ""}`}
+           href={videoUrl} target="_blank" rel="noopener noreferrer">
           <span class="vo-play">▶</span>
           <span>
             <strong>{videoLabel(videoUrl)}</strong>
@@ -107,7 +110,8 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
         {/* Only when there's audio too — without it the video is already the
             hero above, and a second copy here would just be a duplicate link. */}
         {videoUrl && audioUrl && (
-          <a class="btn btn-primary btn-sm" href={videoUrl} target="_blank" rel="noopener noreferrer">
+          <a class={`btn btn-primary btn-sm${videoPlat ? ` plat-${videoPlat}` : ""}`}
+             href={videoUrl} target="_blank" rel="noopener noreferrer">
             ▶ {videoLabel(videoUrl)}
           </a>
         )}
@@ -195,6 +199,15 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
     display: grid; place-items: center; font-size: 1rem;
     background: var(--brand); color: #07121a;
   }
+
+  /* Platform colours. The play badge uses YouTube's true red (#FF0000); it's a
+     graphic, so it only needs 3:1 against its white glyph and clears that. The
+     BUTTON carries text, which needs 4.5:1 — white on #FF0000 is 4.0:1 and
+     fails, so the button uses #C00, YouTube's darker brand red, at 6.1:1. */
+  .plat-youtube.btn { background: #cc0000; color: #fff; border-color: #cc0000; }
+  .plat-youtube.btn:hover { background: #a50000; border-color: #a50000; }
+  .plat-youtube .vo-play { background: #ff0000; color: #fff; }
+  .plat-youtube.video-only:hover { border-color: #cc0000; }
   .video-only strong { display: block; font-size: 1rem; }
   .vo-sub { display: block; font-size: .85rem; color: var(--text-soft); margin-top: 2px; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
