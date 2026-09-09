@@ -1,0 +1,16 @@
+# slug<TAB>kind<TAB>title<TAB>source path
+# Feed to: python tools/attach_batch.py tools/attachments.tsv --remote [--dry-run]
+# Re-running is safe: attach_extras upserts on r2_key.
+2025-11-02-1-john-5-part-1	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-02 1 John 5 - Part 1 Loving the Children of God.docx
+2025-11-09-1-john-5-part-2	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-09 1 John 5 - Part 2 Faith Working through Love.docx
+2025-11-16-1-john-5-part-3	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-16 1 John 5 - Part 3 Water and Blood.docx
+2025-11-23-1-john-5-part-4	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-23 1 John 5 - Part 4 Assurance.docx
+2025-11-23-1-john-5-part-4	handout	Handout	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-23 1 John 5 - Part 4 Assurance - Handout.docx
+2025-12-07-1-john-5-part-6	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-11-30 1 John 5 - Part 6 Prayer.docx
+2025-12-14-1-john-5-part-7	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-12-14 1 John 5 - Part 7 We Know.docx
+2025-12-14-1-john-5-part-7	handout	Fill-in-the-blank handout	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-12-14 1 John 5 - Part 7 We Know - fILL IN BLANK.docx
+2025-12-14-1-john-5-part-7	handout	Printable notes (PDF)	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\1John5Notes1214.pdf
+2025-12-21-1-john-5-part-8	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2025-12-21 1 John 5 - Part 8 Idols.docx
+2025-12-21-1-john-5-part-8	handout	Printable notes (PDF)	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\1John5Notes20251221.pdf
+2026-05-17-might-as-well-face-it-i-m-adopted-to-love	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2026-05-17 1 John 5 - 1 Outline.docx
+2026-08-09-union-with-christ-part-1	notes	Study notes	C:\Users\mac\Proton Drive\abereanone\My files\02_Bible-Teaching\TeachingPreaching\2026-08-09 Union with Christ - Part 1.docx
