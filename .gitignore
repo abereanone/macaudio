@@ -51,3 +51,9 @@ tools/delete_dm_dupes.bat
 # Generated Word docs (make_docs.py) and the old media scratch folder
 tools/*.docx
 .videos/
+
+# retired scripts' output — moved to tools/.obsolete/, still local-only
+# (these contain local absolute paths)
+tools/.obsolete/*.txt
+tools/.obsolete/*.csv
+tools/.obsolete/*.log

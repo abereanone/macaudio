@@ -269,7 +269,13 @@ def main() -> None:
     # No audio -> no R2 object and no source file to be idempotent against.
     # source_path is UNIQUE, but SQLite allows many NULLs in a UNIQUE column, so
     # video-only items don't collide with each other.
-    r2_key = f"audio/{category}/{slug}{ext}" if src else None
+    # Key is deliberately category-FREE. Category is metadata that gets
+    # corrected (a "Sunday Service" filename that was really an open-air);
+    # baking it into the storage path made every re-categorization a
+    # copy-object dance, or a silent 404 when a reseed re-derived the path.
+    # items.r2_key is the only source of truth for the URL, so older
+    # audio/<cat>/<slug> keys keep working untouched alongside these.
+    r2_key = f"audio/{slug}{ext}" if src else None
     coll_slug = slugify(series) if series else None
 
     print(f"\n  slug       {slug}")

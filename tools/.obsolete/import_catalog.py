@@ -20,7 +20,11 @@ The live catalog now holds work that NO SCAN CAN REPRODUCE:
   - hand-corrected passage_ref / primary scripture refs (68 of them),
   - hand-fixed titles, dates, categories, series and speaker attributions,
   - items.video_url  (pasted in by hand),
-  - item_files rows   (attachments; these CASCADE-delete with the item).
+  - item_files rows   (attachments; these CASCADE-delete with the item),
+  - items.r2_key for every item imported before the key scheme changed. Keys
+    used to be audio/<category>/<slug>; they are now audio/<slug>, so a reseed
+    re-derives a path the older objects were never uploaded to and their audio
+    404s. Live keys are whatever D1 says -- carry them forward, don't recompute.
 
 So a reseed is destructive in a way it wasn't when the catalog was young, and
 it now requires an explicit --wipe. For day-to-day work use the single-item
@@ -378,9 +382,9 @@ def main() -> None:
                     if transcript:
                         transcript = transcript.replace(t, "")
                 if not red.get("drop_audio"):
-                    r2_key = f"audio/{cat}/{slug}{ext}"
+                    r2_key = f"audio/{slug}{ext}"
             else:
-                r2_key = f"audio/{cat}/{slug}{ext}"
+                r2_key = f"audio/{slug}{ext}"
 
             rows.append({
                 "slug": slug, "title": title, "category": cat, "speaker": speaker,
