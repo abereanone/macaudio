@@ -1,0 +1,230 @@
+{
+  "deleted_at": "2026-09-10T08:04:46",
+  "note": "Orphaned audio/podcast/* objects; same audio lives at kept_key. Sources on Proton Drive if ever needed again.",
+  "objects": [
+    {
+      "item_id": "226",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-1.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-1.mp3",
+      "size": 27606566,
+      "etag": "\"6c3a69f3252ae86b7ab929a515920bd4\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "227",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-2.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-2.mp3",
+      "size": 26648806,
+      "etag": "\"e2ec5dc2c029b583ca7ecc607e6eca9e\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "228",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-3.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-3.mp3",
+      "size": 23825340,
+      "etag": "\"09d83704e6679ced1af0f78adccc2245\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "229",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-4-hebrews-2-2-7.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-4-hebrews-2-2-7.mp3",
+      "size": 30276083,
+      "etag": "\"559ba9ad96c5c829e5d6686b85e0b6a0\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "231",
+      "deleted_key": "audio/podcast/2021-01-01-is-jesus-superman-hebrews-part-5-hebrews-2-9-18.mp3",
+      "kept_key": "audio/sermon/2021-01-01-is-jesus-superman-hebrews-part-5-hebrews-2-9-18.mp3",
+      "size": 33080534,
+      "etag": "\"3132ee9c45faacc370fd90276fa6504d\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "232",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-6-jesus-is-greater-than-hebrews-2-18-3-6.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-6-jesus-is-greater-than-hebrews-2-18-3-6.mp3",
+      "size": 28290027,
+      "etag": "\"caf847c2db2e73d59cb479f4e62b6140\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "234",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-7-do-not-harden-your-hearts-hebrews-3-6-19.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-7-do-not-harden-your-hearts-hebrews-3-6-19.mp3",
+      "size": 25314376,
+      "etag": "\"8671c3b88496300e6c72af9034d4f458\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "235",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-8-enter-his-rest-hebrews-4-1-11.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-8-enter-his-rest-hebrews-4-1-11.mp3",
+      "size": 27616014,
+      "etag": "\"40946df62ca1af06f5981d5adf93520e\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "236",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-9-christ-the-word-of-god.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-9-christ-the-word-of-god.mp3",
+      "size": 26190024,
+      "etag": "\"00c608991bcd3461ccac9d082b63d550\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "237",
+      "deleted_key": "audio/podcast/2021-01-01-hebrews-part-10-christ-the-sympathizing-high-priest-hebrews-4-14-16.mp3",
+      "kept_key": "audio/sermon/2021-01-01-hebrews-part-10-christ-the-sympathizing-high-priest-hebrews-4-14-16.mp3",
+      "size": 37991851,
+      "etag": "\"314f3212f95c11ede8b4b1fc4c79b80e\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "238",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-11-christ-appointed-high-priest-hebrews-5-1-6.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-11-christ-appointed-high-priest-hebrews-5-1-6.mp3",
+      "size": 34547903,
+      "etag": "\"8b95308305a0575e0bac85b26f002837\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "239",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-12-jesus-prayers-and-supplications-hebrews-5-7.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-12-jesus-prayers-and-supplications-hebrews-5-7.mp3",
+      "size": 38292821,
+      "etag": "\"51bf4f411336cdfd03fb0624115879f1\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "240",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-13-dull-of-hearing-hebrews-5-8-14.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-13-dull-of-hearing-hebrews-5-8-14.mp3",
+      "size": 44739810,
+      "etag": "\"be6078bcf57c2ee1a82ddb5c5308eee3\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "241",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-14-can-believers-fall-away-hebrews-6-1-9.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-14-can-believers-fall-away-hebrews-6-1-9.mp3",
+      "size": 42257809,
+      "etag": "\"9c80a0d7a124400549c136f8c806f1b3\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "242",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-15-things-that-accompany-salvation-hebrews-6-9-12.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-15-things-that-accompany-salvation-hebrews-6-9-12.mp3",
+      "size": 39417317,
+      "etag": "\"0f5b83888372698e825798467b13879f\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "243",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-16-two-unchangeable-things-hebrews-6-13-20.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-16-two-unchangeable-things-hebrews-6-13-20.mp3",
+      "size": 30580559,
+      "etag": "\"2075e368e89f9552278fc67fc06df35f\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "244",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-17-melchizedek-hebrews-7-1-10.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-17-melchizedek-hebrews-7-1-10.mp3",
+      "size": 29137964,
+      "etag": "\"a47e03ead4868b29c0579abd09ca1dd1\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "245",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-18-new-priesthood-new-law-hebrews-7-11-19.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-18-new-priesthood-new-law-hebrews-7-11-19.mp3",
+      "size": 34997660,
+      "etag": "\"b942aba08d11ae45ee6369d36eaa2904\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "246",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-19-it-was-fitting-hebrews-7-20-28.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-19-it-was-fitting-hebrews-7-20-28.mp3",
+      "size": 38639367,
+      "etag": "\"bedbc7bb83640af07881a350c2099bf2\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "247",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-20-planned-obsolescence-hebrews-8-1-5.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-20-planned-obsolescence-hebrews-8-1-5.mp3",
+      "size": 43570515,
+      "etag": "\"4d02ae5c4536be113328544e82ae0901\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "248",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-21-out-with-the-old-hebrews-8-6-13.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-21-out-with-the-old-hebrews-8-6-13.mp3",
+      "size": 37032446,
+      "etag": "\"fe1d75aad7e4b49a5589c7f3b790241c\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "249",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-22-new-covenant-prophesied-hebrews-8-8-12-jeremiah-31.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-22-new-covenant-prophesied-hebrews-8-8-12-jeremiah-31.mp3",
+      "size": 32241174,
+      "etag": "\"6715bf3295a03c148f973345576ee6ea\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "250",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-23-god-s-law-on-our-hearts-hebrews-9-1-5.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-23-god-s-law-on-our-hearts-hebrews-9-1-5.mp3",
+      "size": 34408544,
+      "etag": "\"e46873eee2168ef8ab0d67a44a96188d\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "251",
+      "deleted_key": "audio/podcast/2022-01-01-hebrews-part-24-where-roman-catholicism-fails-hebrews-9-6-11.mp3",
+      "kept_key": "audio/sermon/2022-01-01-hebrews-part-24-where-roman-catholicism-fails-hebrews-9-6-11.mp3",
+      "size": 25770450,
+      "etag": "\"b4673b56dadc514f21fa2576d725495b\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "257",
+      "deleted_key": "audio/podcast/2019-01-01-you-are-david.mp3",
+      "kept_key": "audio/conference/2019-01-01-you-are-david.mp3",
+      "size": 24950133,
+      "etag": "\"90e44dd7547523d9e1130da9465a3b6c\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "258",
+      "deleted_key": "audio/podcast/2019-01-01-god-did-the-work.mp3",
+      "kept_key": "audio/conference/2019-01-01-god-did-the-work.mp3",
+      "size": 28202088,
+      "etag": "\"5125232ffa12259f64fcdb312a761559\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "259",
+      "deleted_key": "audio/podcast/2019-01-01-now-we-worship-and-serve-him.mp3",
+      "kept_key": "audio/conference/2019-01-01-now-we-worship-and-serve-him.mp3",
+      "size": 31500924,
+      "etag": "\"8131f044df7f09254b571cd0aef6859e\"",
+      "status_before": 206
+    },
+    {
+      "item_id": "262",
+      "deleted_key": "audio/podcast/2019-01-01-homosexual-pride-parade-june-2019.mp3",
+      "kept_key": "audio/open_air/2019-01-01-homosexual-pride-parade-june-2019.mp3",
+      "size": 64971212,
+      "etag": "\"f1e1f758e63fab3641281f5ed126f8bf\"",
+      "status_before": 206
+    }
+  ]
+}
