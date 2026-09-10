@@ -43,3 +43,18 @@ work fine; mixed conventions in the bucket are expected and correct.
 in the transcript. That is wrong for topical sermons, which often open on an
 unrelated verse. Pass `--passage` explicitly when the text is known, or correct
 it afterwards with `fix_passage.py`.
+
+## Putting sermons on YouTube
+
+In progress. **Read `docs/youtube-pipeline.md` before touching
+`tools/make_video.py` or `tools/make_thumb.mjs`** — it records what is built,
+what was measured, and which decisions are already settled (and why).
+
+| Task | Tool |
+|---|---|
+| Render one item to an upload-ready MP4 + thumbnail | `tools/make_video.py --slug SLUG` |
+| Title card / thumbnail on its own | `tools/make_thumb.mjs` |
+
+Uploads are **manual**, by choice: an unaudited YouTube API project locks every
+upload to private permanently, with no appeal. Do not propose the API uploader
+without addressing that first.

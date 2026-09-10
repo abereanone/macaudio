@@ -71,8 +71,15 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
     <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
       <stop offset="0" stop-color="${C.bgTop}"/><stop offset="1" stop-color="${C.bgBot}"/>
     </linearGradient>
+    <linearGradient id="scrim" x1="0" y1="0" x2="1" y2="0.35">
+      <stop offset="0"    stop-color="#050807" stop-opacity="0.92"/>
+      <stop offset="0.55" stop-color="#050807" stop-opacity="0.72"/>
+      <stop offset="1"    stop-color="#050807" stop-opacity="0.34"/>
+    </linearGradient>
   </defs>
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  ${a.overlay === undefined
+    ? `<rect width="${W}" height="${H}" fill="url(#bg)"/>`
+    : `<rect width="${W}" height="${H}" fill="url(#scrim)"/>`}
   <rect x="0" y="0" width="${W}" height="6" fill="${C.amber2}" opacity="0.9"/>
   ${mark}
   <text x="232" y="196" font-family="Georgia, serif" font-style="italic"
