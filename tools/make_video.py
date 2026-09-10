@@ -1,20 +1,24 @@
 """Render one catalog item to an upload-ready YouTube MP4 + thumbnail.
 
-The video is a looping background clip; the audio is the sermon. The background
-is stream-COPIED (never re-encoded), so a 40-minute video takes seconds -- the
-loop is encoded once, in .video/loops/<category>.mp4, and reused.
+The video is the sermon's own title card, held for the whole message, so the
+viewer always sees what they are listening to. An abstract background tells them
+nothing -- and costs more, because a held still compresses to about 18 kbps.
 
-Audio IS re-encoded (AAC) so the MP4 is broadly compatible, which also lets us
-run loudnorm. The corpus spans 15 years of different rooms and recorders, so
-without normalisation listeners ride the volume knob between sermons.
+The card is encoded ONCE as a short clip and then stream-COPIED for the full
+duration, so the video side of a 35-minute sermon costs ~0.3s and ~5 MB. Run
+time is dominated by the audio pass (~34x realtime), not the video.
+
+Audio IS re-encoded (AAC), which is what makes loudnorm possible. The corpus
+spans 15 years of different rooms and recorders; without normalising it,
+listeners ride the volume knob between sermons.
 
 Outputs, into --out-dir (default .video/out):
   <slug>.mp4    the upload
-  <slug>.png    1280x720 thumbnail (tools/make_thumb.mjs)
+  <slug>.png    1280x720 thumbnail, also used as the video's card
   <slug>.txt    title + description to paste into YouTube
 
 Usage:
-  python tools/make_video.py --slug 2024-05-12-suffering-saints-seek-a-savior
+  python tools/make_video.py --slug 2022-08-21-suffering-saints-seek-a-savior
   python tools/make_video.py --slug SLUG --dry-run
 """
 from __future__ import annotations
@@ -40,8 +44,13 @@ SITE = "https://teaching.michaelcoughlin.net"
 # audio alone instead of pulling it down.
 LOUDNORM = "loudnorm=I=-14:TP=-1.5:LRA=11"
 
+# A held still only needs a keyframe every 20s. At 2s GOPs the same card costs
+# 122 kbps (31 MB per sermon); at these settings it costs 18 kbps (5 MB).
+CARD_SECONDS, CARD_FPS = 20, 10
+
 
 def cf_env() -> dict:
+    """os.environ + Cloudflare creds from .dev.vars, so wrangler works headless."""
     env = dict(os.environ)
     dv = load_dev_vars()
     for k in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
@@ -81,7 +90,6 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Render one item to a YouTube MP4 + thumbnail.")
     p.add_argument("--slug", required=True)
     p.add_argument("--out-dir", default=str(REPO / ".video" / "out"))
-    p.add_argument("--loops-dir", default=str(REPO / ".video" / "loops"))
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
@@ -93,14 +101,12 @@ def main() -> None:
         sys.exit(f"No item with slug {a.slug}")
     it = found[0]
 
-    loop = Path(a.loops_dir) / f"{it['category']}.mp4"
-    if not loop.exists():
-        loop = Path(a.loops_dir) / "sermon.mp4"
-        if not loop.exists():
-            sys.exit(f"No loop for category {it['category']} and no sermon.mp4 fallback in {a.loops_dir}")
-
-    out_dir = Path(a.out_dir); out_dir.mkdir(parents=True, exist_ok=True)
-    mp4, png, txt = (out_dir / f"{a.slug}.mp4", out_dir / f"{a.slug}.png", out_dir / f"{a.slug}.txt")
+    out_dir = Path(a.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    mp4 = out_dir / f"{a.slug}.mp4"
+    png = out_dir / f"{a.slug}.png"
+    txt = out_dir / f"{a.slug}.txt"
+    card = out_dir / f"{a.slug}.card.mp4"
 
     # audio: prefer the local source; fall back to pulling the object from R2
     src = Path(it["source_path"]) if it.get("source_path") else None
@@ -118,7 +124,7 @@ def main() -> None:
 
     bits = [it["title"]]
     if it.get("series") and it.get("series_part"):
-        bits.append(f"{it['series']} \u00b7 {it['series_part']}")
+        bits.append(f"{it['series']} · {it['series_part']}")
     elif it.get("series"):
         bits.append(it["series"])
     yt_title = " | ".join(bits)[:100]   # YouTube hard-caps titles at 100 chars
@@ -133,7 +139,7 @@ def main() -> None:
     desc += ["", "Michael Coughlin", f"Full audio archive: {SITE}/listen/{a.slug}", ""]
 
     print(f"\n  slug      {a.slug}")
-    print(f"  category  {it['category']}   loop {loop.name}")
+    print(f"  category  {it['category']}")
     print(f"  audio     {src}")
     print(f"  title     {yt_title}")
     print(f"  outputs   {mp4.name}, {png.name}, {txt.name}")
@@ -141,25 +147,14 @@ def main() -> None:
         print("\n--- DRY RUN, nothing written ---")
         return
 
-    # -shortest is NOT frame-accurate with a stream-copied video: it flushes to a
-    # packet boundary and leaves several seconds of background running past the
-    # end of the audio. Cap the output at the audio's real duration instead.
+    # -shortest is NOT frame-accurate against a stream-copied video: it flushes to
+    # a packet boundary and leaves seconds of card running past the end of the
+    # audio. Cap the output at the audio's real duration instead.
     audio_dur = probe(src)
     if not audio_dur:
         sys.exit(f"Could not read a duration from {src}")
 
-    ff = ["ffmpeg", "-y", "-v", "error",
-          "-stream_loop", "-1", "-i", str(loop),
-          "-i", str(src),
-          "-map", "0:v", "-map", "1:a",
-          "-c:v", "copy",                       # background is never re-encoded
-          "-af", LOUDNORM,
-          "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
-          "-t", f"{audio_dur:.3f}",
-          "-movflags", "+faststart", str(mp4)]
-    print("\n  rendering (background copied, audio normalised) ...")
-    run(ff, "ffmpeg render")
-
+    # 1. the thumbnail, which doubles as the video's title card
     thumb = ["node", str(HERE / "make_thumb.mjs"), "--out", str(png), "--title", it["title"]]
     for flag, key in (("--passage", "passage_ref"), ("--series", "series"),
                       ("--part", "series_part"), ("--date", "recorded_on")):
@@ -167,9 +162,31 @@ def main() -> None:
             thumb += [flag, str(it[key])]
     run(thumb, "thumbnail")
 
+    # 2. encode it once as a short clip
+    run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(CARD_FPS),
+         "-i", str(png), "-t", str(CARD_SECONDS),
+         "-c:v", "libx264", "-preset", "slow", "-tune", "stillimage", "-crf", "26",
+         "-pix_fmt", "yuv420p", "-r", str(CARD_FPS),
+         "-g", str(CARD_SECONDS * CARD_FPS), "-keyint_min", str(CARD_SECONDS * CARD_FPS),
+         "-sc_threshold", "0", str(card)], "card encode")
+
+    # 3. loop it under the audio without re-encoding a single frame
+    print("\n  rendering (card copied, audio normalised) ...")
+    run(["ffmpeg", "-y", "-v", "error",
+         "-stream_loop", "-1", "-i", str(card),
+         "-i", str(src),
+         "-map", "0:v", "-map", "1:a",
+         "-c:v", "copy",
+         "-af", LOUDNORM,
+         "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
+         "-t", f"{audio_dur:.3f}",
+         "-movflags", "+faststart", str(mp4)], "ffmpeg render")
+    card.unlink(missing_ok=True)
+
     txt.write_text(yt_title + "\n\n" + "\n".join(desc), encoding="utf-8")
 
-    got, want = probe(mp4), it.get("duration_sec") or 0
+    got = probe(mp4)
+    want = it.get("duration_sec") or 0
     size_mb = mp4.stat().st_size / 1048576
     ok = abs(got - want) <= 1.5 if want else True
     print(f"  video     {got/60:.1f} min ({size_mb:.0f} MB)   expected {want/60:.1f} min  "
