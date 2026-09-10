@@ -53,3 +53,6 @@ tools/*.docx
 tools/.obsolete/*.txt
 tools/.obsolete/*.csv
 tools/.obsolete/*.log
+
+# YouTube render scratch (loops, MP4s, thumbnails) - large, regenerable
+.video/
