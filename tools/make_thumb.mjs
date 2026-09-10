@@ -83,7 +83,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   ${meta ? `<text x="98" y="${afterTitle + (a.passage ? 140 : 78)}"
         font-family="Segoe UI, Arial, sans-serif" font-size="30" fill="${C.muted}">${esc(meta)}</text>` : ""}
   <text x="96" y="672" font-family="Segoe UI, Arial, sans-serif" font-size="28"
-        font-weight="600" fill="${C.amber1}">audio.michaelcoughlin.net</text>
+        font-weight="600" fill="${C.amber1}">teaching.michaelcoughlin.net</text>
 </svg>`;
 
 await sharp(Buffer.from(svg)).png().toFile(a.out);
