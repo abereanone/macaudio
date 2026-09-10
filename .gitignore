@@ -37,11 +37,7 @@ tools/.transcript_cache.json
 tools/.extract_progress.json
 tools/_extract_refs.sql
 sitemapActivity.md
-tools/audit_passages.py
-tools/extract_refs.py
-tools/fix_passage.py
 tools/passage_audit.csv
-tools/scripture.py
 
 # one-time dedupe artifacts (contain local absolute paths)
 db/dm_dupes_manifest.txt
