@@ -106,7 +106,7 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_W}" height="${OG
   <text x="330" y="232" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="92" fill="#eaf3ed">Michael Coughlin</text>
   <text x="334" y="300" font-family="Georgia, serif" font-style="italic" font-size="44" fill="${C.green1}">Audio Archive</text>
   <text x="334" y="372" font-family="Segoe UI, Arial, sans-serif" font-size="30" fill="#9bb0a2">Sermons &#183; Classes &#183; Conferences &#183; Open-air preaching</text>
-  <text x="90" y="585" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="${C.amber1}">audio.michaelcoughlin.net</text>
+  <text x="90" y="585" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="${C.amber1}">teaching.michaelcoughlin.net</text>
 </svg>`;
 
 const tasks = [
