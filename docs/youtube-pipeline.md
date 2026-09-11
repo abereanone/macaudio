@@ -33,7 +33,8 @@ and ~10 GB.
 mark and type of `tools/make_brand.mjs`, so a YouTube search result reads as the
 same brand as the site's OG card. Handles one-word and 47-character titles.
 `--overlay` produces a transparent version with a dark scrim, for compositing
-over footage. Nothing calls `--overlay` yet.
+over footage, and `--light` switches to dark type on a pale scrim. Neither is
+wired into `make_video.py` yet — the prototype composited them by hand.
 
 `.video/` is gitignored — loops, MP4s and thumbnails are large and regenerable.
 
@@ -127,29 +128,28 @@ page. Drop raw downloads in `.video/source/`.
 
 **1. RESOLVED** — the title fades in and out; see Style above.
 
-**2. Footage.** Nothing sourced yet. Free and licence-clean: Pexels Videos,
-Pixabay, Coverr, Mixkit — check each clip's licence individually. Want dark,
-low-contrast, slow, no cuts, no people/text/logos, 10–20s, 1080p. Strip the
-audio (`-an`): stock clips often carry a music bed that trips Content ID.
-Drop raw downloads in `.video/source/`.
+**2. Footage — the live blocker.** One clip exists (a Coverr drone shot, too
+moving to be the final look). Needs 3+ that match the Clip brief above.
 
-**3. One scene or many?** Rather than looping a single clip, assemble a montage
-per category (several scenes with crossfades, a few minutes long), encoded once
-and reused across every sermon in that category.
+**3. Are scenes shared across a category, or per sermon?** Undecided. Shared
+means one montage encoded per category and stream-copied for every sermon in it
+— much cheaper. Per-sermon means more variety but an encode each.
 
-**4. Light or dark text — decide automatically.** Measure the average brightness
-of the region where the text actually sits and pick the palette from it. No flag.
-Note that footage brightness *changes over time*, so a light treatment still
-needs a pale scrim or the text vanishes when a cloud moves.
+**4. Light/dark is automatic in principle** (measure, then pick) but the
+measurement is not yet wired into `make_video.py` — it was run by hand for the
+prototype.
 
 ## Still to build
 
 - **Batch runner with a state file** — which have MP4s, which are uploaded, which
   have `video_url` written back. Same pattern as the existing `uploaded_r2.log`.
   This is what makes a-couple-a-day survivable over weeks.
-- **Footage prep tool** — scale to 720p, trim, strip audio, ping-pong
-  (`split` → `reverse` → `concat`, which makes *any* clip loop seamlessly), and
-  encode to the spec the renderer expects.
+- **Montage builder** — the real missing piece. Take N clips from
+  `.video/source/`, scale to 720p, strip audio, crossfade each into the next,
+  crossfade the last back into the first (tail-into-head via `trim` + `blend`,
+  NOT reverse), overlay the title with ONE fade in/out pair, and encode once.
+  `make_video.py` then stream-copies that montage under the audio, as it already
+  does with the title card.
 - **Write the URL back.** After upload, `tools/attach_extras.py --slug SLUG
   --video URL --remote` fills `items.video_url`, and the sermon page grows its
   video button automatically.
