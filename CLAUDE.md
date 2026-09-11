@@ -22,6 +22,7 @@ one being possible.
 | (Re)index a transcript | `tools/attach_transcript.py` |
 | Correct a primary passage | `tools/fix_passage.py` |
 | Audit passages across the catalog | `tools/audit_passages.py` |
+| Copy production into the local dev DB | `tools/sync_local_db.py` |
 
 All of them default to **production**; `--local` targets dev D1. Credentials
 come from `.dev.vars` (the token can see several Cloudflare accounts, so tools
@@ -58,3 +59,15 @@ what was measured, and which decisions are already settled (and why).
 Uploads are **manual**, by choice: an unaudited YouTube API project locks every
 upload to private permanently, with no appeal. Do not propose the API uploader
 without addressing that first.
+
+## Previewing locally
+
+`npx wrangler pages dev ./dist` (after `npx astro build`) -- it is a **Pages**
+project, so `wrangler dev` refuses it. That serves the LOCAL D1, which drifts
+from production; run `tools/sync_local_db.py` first or a filter with no local
+matches looks broken when it is fine.
+
+`wrangler d1 export` cannot dump this database ("cannot export databases with
+Virtual Tables (fts5)"), which is why that tool replays the base tables over the
+query API instead. It never copies `item_fts` -- the 0003_fts_sync triggers own
+it and rebuild it on insert.
