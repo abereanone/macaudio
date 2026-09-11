@@ -72,20 +72,60 @@ audit is the only remedy, and the audit targets services with users, not one
 person uploading their own sermons. Manual upload sidesteps this entirely, and
 suits the "a couple at a time" pace anyway.
 
+## Style — settled 2026-09-11
+
+Approved after several rounds. Do not re-litigate these:
+
+- **No ping-pong / reverse loops.** Reversed motion reads as distracting. The
+  seam is hidden instead by crossfading the clip's tail into its own head
+  (`trim` + `blend`, ~2s), which loops cleanly without playing anything
+  backwards.
+- **Footage should be nearly still.** Locked-off camera, one small thing moving
+  — leaves, steam, flame, rain. Not drone shots, pans or dollies. Slowing a
+  moving clip down is a poor substitute: the whole frame still drifts.
+- **The title fades in and out**, rather than sitting on screen throughout.
+- **Scenes crossfade into other scenes** across a montage.
+- **Light or dark palette is chosen by measurement, not taste.** Sample the
+  luma of the region the text occupies (`crop` + `signalstats` YAVG); above
+  ~110 use `--light` (dark type on a pale scrim), below it the dark palette.
+  The Coverr mountain clip measured 126 and got the light treatment.
+
+### Two traps found the hard way
+
+**Only ONE fade in/out pair per overlay.** Chaining a second
+`fade=t=in:...:alpha=1` after a `fade=t=out` silently erases the *first*
+appearance — a fade-in forces alpha to 0 for all timestamps before its start.
+The title vanished entirely from a whole render because of this. Recurrence
+comes from the loop repeating, not from stacking fades.
+
+**Loop length IS the title cadence.** The title reappears once per loop, so a
+54-second loop shows it every 54 seconds — far too often. Showing it every 4-5
+minutes needs a montage that long, which means several clips or long ones. This
+is the main reason more footage is needed.
+
+### What footage costs
+
+| | Per 35-min sermon | Library (233) |
+|---|---|---|
+| Title card only | 37 MB | ~10 GB |
+| Moving footage (crf 26, ~1.5 Mbps) | 416 MB | ~95 GB |
+
+Genuinely still footage should land well below the moving-footage figure, since
+the encoder only spends bits where something moves. Worth re-measuring once real
+clips exist.
+
+### Clip brief
+
+Locked-off camera, one small moving element, **30s+ preferred** (longer clips
+mean longer loops mean rarer titles), 1080p, consistent exposure, no people,
+text, logos or landmarks. Strip audio (`-an`) — stock clips often carry a music
+bed that trips Content ID. Sources: coverr.co, pexels.com/videos,
+pixabay.com/videos, mixkit.co, mazwai.com. Check each clip's licence on its own
+page. Drop raw downloads in `.video/source/`.
+
 ## Open questions
 
-**1. Does the title stay on screen the whole time?** This is the only real fork
-left.
-
-| | Text throughout | Text on thumbnail only |
-|---|---|---|
-| Video | re-encoded per sermon | montage stream-copied, shared |
-| Per sermon | ~2–3 min (NVENC) | ~1 min, audio-bound |
-| Library | one overnight batch | ~5 hours |
-
-A middle option exists: title card for the first 30 seconds, then fade into
-pure footage — an encoded intro concatenated onto a copied body, which keeps
-copy speed for ~95% of the file.
+**1. RESOLVED** — the title fades in and out; see Style above.
 
 **2. Footage.** Nothing sourced yet. Free and licence-clean: Pexels Videos,
 Pixabay, Coverr, Mixkit — check each clip's licence individually. Want dark,

@@ -12,8 +12,13 @@ for (let i = 2; i < process.argv.length; i += 2) a[process.argv[i].replace(/^--/
 if (!a.out || !a.title) { console.error("need --out and --title"); process.exit(1); }
 
 const W = 1280, H = 720;
-const C = { bgTop: "#15241b", bgBot: "#0b110d", green1: "#a7e3c4", green2: "#4fae85",
-            amber1: "#e7bd6f", amber2: "#cf972f", text: "#eaf3ed", muted: "#9bb0a2" };
+const DARK  = { bgTop: "#15241b", bgBot: "#0b110d", green1: "#a7e3c4", green2: "#4fae85",
+                amber1: "#e7bd6f", amber2: "#cf972f", text: "#eaf3ed", muted: "#9bb0a2",
+                scrim: "#050807", scrimA: 0.92, scrimB: 0.72, scrimC: 0.34 };
+const LIGHT = { bgTop: "#eef3ec", bgBot: "#dde7dd", green1: "#2f6b4f", green2: "#3f8f6c",
+                amber1: "#a8761b", amber2: "#cf972f", text: "#0f1f17", muted: "#4a5a50",
+                scrim: "#f6f9f4", scrimA: 0.90, scrimB: 0.70, scrimC: 0.30 };
+const C = a.light === undefined ? DARK : LIGHT;
 
 const esc = (s) => String(s ?? "").replace(/[<>&'"]/g, (c) =>
   ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]));
@@ -72,9 +77,9 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
       <stop offset="0" stop-color="${C.bgTop}"/><stop offset="1" stop-color="${C.bgBot}"/>
     </linearGradient>
     <linearGradient id="scrim" x1="0" y1="0" x2="1" y2="0.35">
-      <stop offset="0"    stop-color="#050807" stop-opacity="0.92"/>
-      <stop offset="0.55" stop-color="#050807" stop-opacity="0.72"/>
-      <stop offset="1"    stop-color="#050807" stop-opacity="0.34"/>
+      <stop offset="0"    stop-color="${C.scrim}" stop-opacity="${C.scrimA}"/>
+      <stop offset="0.55" stop-color="${C.scrim}" stop-opacity="${C.scrimB}"/>
+      <stop offset="1"    stop-color="${C.scrim}" stop-opacity="${C.scrimC}"/>
     </linearGradient>
   </defs>
   ${a.overlay === undefined
