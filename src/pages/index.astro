@@ -8,6 +8,23 @@ const params = Astro.url.searchParams;
 const q = (params.get("q") ?? "").trim();
 const category = (params.get("category") ?? "").trim();
 const collection = (params.get("collection") ?? "").trim();
+const video = params.get("video") === "1";
+
+// Pills used to link to "/?category=x", which silently dropped every other
+// filter. With a third row that gets confusing fast, so each pill now keeps the
+// filters it isn't itself changing.
+const linkTo = (over: { category?: string; collection?: string; video?: boolean }) => {
+  const next = new URLSearchParams();
+  const cat = over.category ?? category;
+  const col = over.collection ?? collection;
+  const vid = over.video ?? video;
+  if (cat) next.set("category", cat);
+  if (col) next.set("collection", col);
+  if (vid) next.set("video", "1");
+  if (q) next.set("q", q);
+  const s = next.toString();
+  return s ? `/?${s}` : "/";
+};
 
 const ftsQuery = q
   ? q.split(/\s+/).map((t) => t.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).map((t) => `${t}*`).join(" ")
@@ -19,6 +36,7 @@ const joins: string[] = [];
 if (ftsQuery) { joins.push("JOIN item_fts ON item_fts.item_id = i.id"); where.push("item_fts MATCH ?"); args.push(ftsQuery); }
 if (category) { where.push("i.category = ?"); args.push(category); }
 if (collection) { where.push("co.slug = ?"); args.push(collection); }
+if (video) { where.push("i.video_url IS NOT NULL"); }
 
 // On a text search, return a highlighted excerpt (FTS5 snippet) and order by
 // relevance; otherwise newest first. @@H@@/@@/H@@ are placeholder markers we turn
@@ -62,30 +80,40 @@ const catCounts = await all<{ category: string; n: number }>(
   db, `SELECT category, COUNT(*) n FROM items WHERE published=1 GROUP BY category`
 );
 const countOf = (k: string) => catCounts.find((c) => c.category === k)?.n ?? 0;
+const videoCount = (await all<{ n: number }>(
+  db, `SELECT COUNT(*) n FROM items WHERE published=1 AND video_url IS NOT NULL`
+))[0]?.n ?? 0;
 ---
 <Base description="Sermons, classes, conferences, and open-air preaching by Michael Coughlin — searchable, transcribed, and indexed by scripture.">
   <section class="section container">
     <h1>Browse the library</h1>
 
     <div class="pill-line">
+      <span class="pill-label">Watch</span>
+      <a class={`pill ${!video ? "on" : ""}`} href={linkTo({ video: false })}>All</a>
+      <a class={`pill ${video ? "on" : ""}`} href={linkTo({ video: true })}>Available on YouTube <span class="n">{videoCount}</span></a>
+    </div>
+
+    <div class="pill-line">
       <span class="pill-label">Type</span>
-      <a class={`pill ${!category ? "on" : ""}`} href="/">All</a>
+      <a class={`pill ${!category ? "on" : ""}`} href={linkTo({ category: "" })}>All</a>
       {CATEGORIES.map((c) => countOf(c.key) > 0 && (
-        <a class={`pill ${category === c.key ? "on" : ""}`} href={`/?category=${c.key}`}>{c.label} <span class="n">{countOf(c.key)}</span></a>
+        <a class={`pill ${category === c.key ? "on" : ""}`} href={linkTo({ category: c.key })}>{c.label} <span class="n">{countOf(c.key)}</span></a>
       ))}
     </div>
 
     <div class="pill-line">
       <span class="pill-label">Series</span>
-      <a class={`pill ${!collection ? "on" : ""}`} href="/">All</a>
+      <a class={`pill ${!collection ? "on" : ""}`} href={linkTo({ collection: "" })}>All</a>
       {collections.map((c) => (
-        <a class={`pill ${collection === c.slug ? "on" : ""}`} href={`/?collection=${c.slug}`}>{c.title}</a>
+        <a class={`pill ${collection === c.slug ? "on" : ""}`} href={linkTo({ collection: c.slug })}>{c.title}</a>
       ))}
     </div>
 
     <form method="GET" class="filters card">
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="collection" value={collection} />
+      {video && <input type="hidden" name="video" value="1" />}
       <div class="field-row">
         <div><label for="q">Search</label><input id="q" name="q" value={q} placeholder="Title, passage, or anything said…" /></div>
       </div>

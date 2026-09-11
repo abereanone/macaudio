@@ -127,6 +127,11 @@ def to_srt(segs: list[dict]) -> str:
 def main() -> None:
     p = argparse.ArgumentParser(description="Generate a timed .srt for one item.")
     p.add_argument("--slug", required=True)
+    p.add_argument("--audio", default=None,
+                   help="transcribe THIS file instead of the catalog's source audio. "
+                        "Use the finished upload MP4: a prepended title page shifts "
+                        "every timestamp, so subtitles cut from the original audio "
+                        "would run early for the whole message.")
     p.add_argument("--out", default=None)
     p.add_argument("--chunk-seconds", type=int, default=CHUNK_SECONDS)
     a = p.parse_args()
@@ -137,9 +142,14 @@ def main() -> None:
         sys.exit(f"No item with slug {a.slug}")
     it = found[0]
 
-    src = Path(it["source_path"]) if it.get("source_path") else None
-    if src is None or not src.exists():
-        sys.exit(f"Source audio not found locally for {a.slug}: {it.get('source_path')}")
+    if a.audio:
+        src = Path(a.audio)
+        if not src.exists():
+            sys.exit(f"No such file: {src}")
+    else:
+        src = Path(it["source_path"]) if it.get("source_path") else None
+        if src is None or not src.exists():
+            sys.exit(f"Source audio not found locally for {a.slug}: {it.get('source_path')}")
 
     out = Path(a.out) if a.out else REPO / ".video" / "out" / a.slug / "captions.srt"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +180,7 @@ def main() -> None:
     out.write_text(srt, encoding="utf-8")
 
     last = all_segs[-1]["end"]
-    want = it.get("duration_sec") or 0
+    want = probe(src) if a.audio else (it.get("duration_sec") or 0)
     cues = srt.count(" --> ")
     print(f"\n  {cues} cues, last ends {last/60:.1f} min, audio is {want/60:.1f} min")
     if want and abs(last - want) > 30:

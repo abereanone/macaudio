@@ -119,9 +119,24 @@ def mean_luma_behind_text(path: Path) -> float | None:
     return sum(vals) / len(vals) if vals else None
 
 
+def youtube_title(title: str, series: str | None, part: str | None) -> str:
+    """Title, with the series appended only when it adds something. Many titles
+    already carry the series and part, and blindly appending produced "Union with
+    Christ - Part 1 | Union with Christ - Part 1". Capped at YouTube's 100."""
+    t = title.strip()
+    low = t.lower()
+    if series and series.strip().lower() not in low:
+        tail = f"{series} - {part}" if part and part.strip().lower() not in low else series
+        t = f"{t} | {tail}"
+    return t[:100]
+
+
 def safe_filename(name: str) -> str:
     """YouTube prefills the title from the filename, so the file is named for the
-    title -- minus the characters Windows will not allow in one."""
+    title -- minus the characters Windows will not allow in one, and the middle
+    dot, which survives on disk but renders as a replacement character in
+    terminals and upload forms."""
+    name = name.replace("·", "-")
     return re.sub(r"\s+", " ", re.sub(r'[\\/:*?"<>|]+', "-", name)).strip(" .") or "sermon"
 
 
@@ -177,12 +192,7 @@ def main() -> None:
         sys.exit(f"No item with slug {a.slug}")
     it = found[0]
 
-    bits = [it["title"]]
-    if it.get("series") and it.get("series_part"):
-        bits.append(f"{it['series']} · {it['series_part']}")
-    elif it.get("series"):
-        bits.append(it["series"])
-    yt_title = " | ".join(bits)[:100]   # YouTube hard-caps titles at 100 chars
+    yt_title = youtube_title(it["title"], it.get("series"), it.get("series_part"))
 
     pkg = Path(a.out_dir) / a.slug
     pkg.mkdir(parents=True, exist_ok=True)
