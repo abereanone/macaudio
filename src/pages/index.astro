@@ -94,30 +94,31 @@ const videoCount = (await all<{ n: number }>(
       <a class={`pill ${video ? "on" : ""}`} href={linkTo({ video: true })}>Available on YouTube <span class="n">{videoCount}</span></a>
     </div>
 
-    <div class="pill-line">
-      <span class="pill-label">Type</span>
-      <a class={`pill ${!category ? "on" : ""}`} href={linkTo({ category: "" })}>All</a>
-      {CATEGORIES.map((c) => countOf(c.key) > 0 && (
-        <a class={`pill ${category === c.key ? "on" : ""}`} href={linkTo({ category: c.key })}>{c.label} <span class="n">{countOf(c.key)}</span></a>
-      ))}
-    </div>
 
-    {/* Series is a dropdown, not pills: it grows with every new collection and
-        was wrapping to three lines on a phone. Type stays as pills -- it is
-        short, stable, and its counts are worth showing. A plain GET form so it
-        works without JavaScript; the script below just removes the extra click. */}
-    <form class="pill-line" method="GET" data-series-form>
+    {/* Type and Series are both dropdowns. Seven type pills plus a pill per
+        collection filled most of a phone screen before a single sermon showed.
+        Counts move into the option text so nothing is lost. One GET form, so it
+        works without JavaScript; the script below only removes the extra click. */}
+    <form class="filter-row" method="GET" data-filter-form>
+      <label class="pill-label" for="category">Type</label>
+      <select id="category" name="category" class="filter-select">
+        <option value="">All types</option>
+        {CATEGORIES.map((c) => countOf(c.key) > 0 && (
+          <option value={c.key} selected={category === c.key}>{c.label} ({countOf(c.key)})</option>
+        ))}
+      </select>
+
       <label class="pill-label" for="collection">Series</label>
-      <select id="collection" name="collection" class="series-select">
+      <select id="collection" name="collection" class="filter-select">
         <option value="">All series</option>
         {collections.map((c) => (
           <option value={c.slug} selected={collection === c.slug}>{c.title}</option>
         ))}
       </select>
-      {category && <input type="hidden" name="category" value={category} />}
+
       {video && <input type="hidden" name="video" value="1" />}
       {q && <input type="hidden" name="q" value={q} />}
-      <button class="btn btn-outline btn-sm" type="submit" data-series-go>Go</button>
+      <button class="btn btn-outline btn-sm" type="submit" data-filter-go>Go</button>
     </form>
 
     <form method="GET" class="filters card">
@@ -170,14 +171,15 @@ const videoCount = (await all<{ n: number }>(
     // Progressive enhancement: with JS, changing the series navigates straight
     // away and the Go button is redundant. Without it, the form still submits.
     (() => {
-      const form = document.querySelector("[data-series-form]");
+      const form = document.querySelector("[data-filter-form]");
       if (!form) return;
-      const go = form.querySelector("[data-series-go]");
+      const go = form.querySelector("[data-filter-go]");
       if (go) go.hidden = true;
-      const sel = form.querySelector("select");
-      const mark = () => sel.toggleAttribute("data-all", sel.value === "");
-      mark();
-      sel.addEventListener("change", () => { mark(); form.submit(); });
+      form.querySelectorAll("select").forEach((sel) => {
+        const mark = () => sel.toggleAttribute("data-all", sel.value === "");
+        mark();
+        sel.addEventListener("change", () => { mark(); form.submit(); });
+      });
     })();
   </script>
   <script src="/progress.js" is:inline defer></script>
@@ -204,7 +206,7 @@ const videoCount = (await all<{ n: number }>(
   .row-snip { margin: 6px 0 0; font-size: .9rem; line-height: 1.5; color: var(--text-soft); }
   .row-snip mark { background: color-mix(in srgb, var(--brand) 24%, transparent); color: var(--text); padding: 0 1px; border-radius: 2px; }
   .date { white-space: nowrap; font-size: .88rem; }
-  .series-select {
+  .filter-select {
     padding: 6px 30px 6px 13px; border: 1px solid var(--border); border-radius: 999px;
     background: transparent; color: var(--text-soft); font-size: .9rem; font-weight: 500;
     font-family: inherit; max-width: min(340px, 70vw); cursor: pointer;
@@ -214,13 +216,14 @@ const videoCount = (await all<{ n: number }>(
     background-position: right 14px center, right 9px center;
     background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
   }
-  .series-select:hover { border-color: var(--brand-300); color: var(--text); }
+  .filter-select:hover { border-color: var(--brand-300); color: var(--text); }
   /* .btn sets an explicit display, which beats the [hidden] attribute's UA rule
      -- the same trap the Hide-listened control hit. Opt back out explicitly. */
   .btn[hidden] { display: none; }
   /* An explicit value means the filter is on -- match the active pill. */
-  .series-select:not([data-all]) { color: var(--text); border-color: var(--brand-300); }
-  .series-select option { background: var(--bg-card); color: var(--text); }
+  .filter-select:not([data-all]) { color: var(--text); border-color: var(--brand-300); }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
+  .filter-select option { background: var(--bg-card); color: var(--text); }
   .result-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
   .result-bar p { margin: 0; }
   .hide-listened { display: inline-flex; align-items: center; gap: 7px; font-size: .88rem; cursor: pointer; }
