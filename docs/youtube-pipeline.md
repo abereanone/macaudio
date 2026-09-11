@@ -104,6 +104,36 @@ comes from the loop repeating, not from stacking fades.
 minutes needs a montage that long, which means several clips or long ones. This
 is the main reason more footage is needed.
 
+### Scene structure — CORRECTED 2026-09-11, not yet built
+
+What was built is wrong. It crossfades short clips continuously (a 57s montage
+looping 37 times through a 35-minute sermon) and shows the title once every few
+cycles. The visual loop recurring every ~minute is what reads as repetitive --
+the title cadence was right, the footage cadence was never discussed.
+
+**What is actually wanted:**
+
+    coffee shop  ~4 min  ->  title fades in/out  ->  next scene ~4 min
+    ->  title  ->  next scene ~4 min  ->  title  ->  (repeat)
+
+So each SCENE holds for about four minutes, and the title appears at each scene
+change. With three clips that is a ~12-minute cycle, repeating under three times
+in a 35-minute sermon, and each scene is seen about three times instead of 37.
+
+**How to build it:**
+
+1. Per clip, build a seamless self-loop (tail crossfaded into head, as now) and
+   repeat it to ~4 minutes. The clips are 20-30s, so each holds for 6-12 passes;
+   they are nearly static (motion 0.18-1.19) so `--slow 2.0` halves that.
+2. Crossfade each 4-minute block into the next.
+3. Overlay the title near each scene change.
+
+**Step 3 needs a different overlay technique.** The title must appear several
+times per master, and fade pairs CANNOT be chained on one overlay stream -- a
+second `fade=t=in` erases the first appearance (see the trap above). Use one
+overlay INPUT per appearance, each carrying a single fade in/out pair, chained
+as successive `overlay` filters. Separate streams, so they do not interfere.
+
 ### What footage costs
 
 | | Per 35-min sermon | Library (233) |
