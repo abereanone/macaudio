@@ -8,6 +8,10 @@ export const CATEGORIES: { key: string; label: string }[] = [
   // Michael as a GUEST on someone else's show. Deliberately separate from
   // "podcast", which means Be A Berean — his own programme.
   { key: "interview", label: "Interviews & Guest Appearances" },
+  // One-to-one evangelistic dialogue, as distinct from preaching at a crowd.
+  // Every key here is a FORMAT. Topics ("abortion abolition") belong in a
+  // collection, not here — mixing the two is what makes a category list rot.
+  { key: "conversation", label: "Conversations" },
 ];
 
 export const CATEGORY_LABEL: Record<string, string> =

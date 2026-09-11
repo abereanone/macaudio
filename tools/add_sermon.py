@@ -60,7 +60,10 @@ BUCKET = "macaudio"
 DB = "macaudio"
 DEFAULT_SPEAKER = "Michael Coughlin"
 AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".flac"}
-CATEGORIES = {"sermon", "class", "conference", "open_air", "podcast", "interview"}
+# Keep in step with CATEGORIES in src/lib/catalog.ts — that list drives the
+# site's Type pills, this one validates what the tools will write.
+CATEGORIES = {"sermon", "class", "conference", "open_air", "podcast", "interview",
+              "conversation"}
 CT = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav", ".flac": "audio/flac"}
 CACHE = "public, max-age=31536000, immutable"
 
