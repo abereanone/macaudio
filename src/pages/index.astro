@@ -123,12 +123,19 @@ const videoCount = (await all<{ n: number }>(
       </div>
     </form>
 
-    <p class="muted" style="margin-top:16px">{items.length}{items.length === 300 ? "+" : ""} item{items.length === 1 ? "" : "s"}</p>
+    <div class="result-bar">
+      <p class="muted" data-result-count>{items.length}{items.length === 300 ? "+" : ""} item{items.length === 1 ? "" : "s"}</p>
+      {/* Shown by progress.js only once something has actually been listened to,
+          so the control never appears to a first-time visitor. */}
+      <label class="hide-listened muted" hidden title="Based on what you've played in this browser">
+        <input type="checkbox" data-hide-listened /> Hide listened
+      </label>
+    </div>
 
     {results.length === 0 ? <p class="muted">Nothing matches those filters.</p> : (
       <div class="list">
         {results.map((it) => (
-          <a class="card row" href={`/listen/${it.slug}`}>
+          <a class="card row" href={`/listen/${it.slug}`} data-slug={it.slug}>
             <div class="row-main">
               <div class="row-tags">
                 <span class="badge badge-cat">{CATEGORY_LABEL[it.category] ?? it.category}</span>
@@ -149,6 +156,7 @@ const videoCount = (await all<{ n: number }>(
       </div>
     )}
   </section>
+  <script src="/progress.js" is:inline defer></script>
 </Base>
 
 <style>
@@ -159,8 +167,12 @@ const videoCount = (await all<{ n: number }>(
   .pill:hover { text-decoration: none; border-color: var(--brand-300); color: var(--text); }
   .pill.on { background: var(--brand); color: #07121a; border-color: var(--brand); }
   .pill .n { opacity: .7; font-size: .8rem; }
-  .list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  /* Two across. The full-width rows left a lot of dead space on a wide screen,
+     and at two columns the excerpt still has room to be readable. */
+  .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+  .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .row[hidden] { display: none; }
+  @media (max-width: 760px) { .list { grid-template-columns: 1fr; } }
   .row:hover { text-decoration: none; border-color: var(--brand-300); }
   .row-main { min-width: 0; }
   .row-tags { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -168,4 +180,11 @@ const videoCount = (await all<{ n: number }>(
   .row-snip { margin: 6px 0 0; font-size: .9rem; line-height: 1.5; color: var(--text-soft); }
   .row-snip mark { background: color-mix(in srgb, var(--brand) 24%, transparent); color: var(--text); padding: 0 1px; border-radius: 2px; }
   .date { white-space: nowrap; font-size: .88rem; }
+  .result-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+  .result-bar p { margin: 0; }
+  .hide-listened { display: inline-flex; align-items: center; gap: 7px; font-size: .88rem; cursor: pointer; }
+  /* An explicit display beats the [hidden] attribute's UA rule, so the
+     control has to opt back out or it shows before anything is listened to. */
+  .hide-listened[hidden] { display: none; }
+  .hide-listened input { accent-color: var(--brand); }
 </style>

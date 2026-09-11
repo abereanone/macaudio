@@ -156,6 +156,7 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   </section>
 
   <script src="/sermon-player.js" is:inline defer></script>
+  <script src="/progress.js" is:inline defer></script>
   <script is:inline>
     document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(b.dataset.copy); const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1500);} catch(e){}
