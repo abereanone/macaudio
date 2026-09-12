@@ -2,13 +2,21 @@
 import "../styles/global.css";
 import Nav from "../components/Nav.astro";
 
-interface Props { title?: string; description?: string; image?: string; }
-const { title, description, image } = Astro.props;
+interface Props {
+  title?: string; description?: string;
+  // An absolute URL is passed through unchanged (per-item cards live on R2).
+  // Dimensions travel WITH the image: og-default.png is 1200x630, the generated
+  // sermon cards are 1280x720, and declaring the wrong size makes scrapers crop.
+  image?: string; imageWidth?: number; imageHeight?: number;
+}
+const { title, description, image, imageWidth, imageHeight } = Astro.props;
 const env = Astro.locals.runtime?.env ?? {};
 const siteName = env.SITE_NAME ?? "Michael Coughlin — Audio";
 const fullTitle = title ? `${title} · ${siteName}` : siteName;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL(image ?? "/og-default.png", Astro.site).href;
+const ogW = image ? (imageWidth ?? 1280) : 1200;
+const ogH = image ? (imageHeight ?? 720) : 630;
 const ogDescription = description ?? "Sermons, classes, conferences, and open-air preaching by Michael Coughlin.";
 ---
 <!doctype html>
@@ -32,8 +40,8 @@ const ogDescription = description ?? "Sermons, classes, conferences, and open-ai
     <meta property="og:description" content={ogDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content={String(ogW)} />
+    <meta property="og:image:height" content={String(ogH)} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={ogDescription} />

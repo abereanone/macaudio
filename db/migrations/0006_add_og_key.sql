@@ -1,0 +1,15 @@
+-- Per-item Open Graph card. Every page currently shares /og-default.png, so a
+-- shared sermon link previews as the generic archive card rather than that
+-- sermon.
+--
+-- Stored, not derived. The same reasoning as items.r2_key: if the page computed
+-- "og/<slug>.png" it would emit a URL for items that have no card yet, and a
+-- 404 image is a WORSE preview than the default one. A NULL here means "use the
+-- default", which is always correct.
+--
+-- Holds an R2 key (e.g. og/2022-08-21-suffering-saints.png), served from
+-- MEDIA_BASE_URL like r2_key is.
+--
+-- Does not affect item_fts: the 0003 triggers fire on
+-- `UPDATE OF title, passage_ref, speaker_id` only.
+ALTER TABLE items ADD COLUMN og_key TEXT;

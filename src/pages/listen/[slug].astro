@@ -11,6 +11,7 @@ const item = await one<{
   id: number; title: string; category: string; recorded_on: string; passage_ref: string;
   series_part: string; description: string; r2_key: string; speaker_name: string; speaker_slug: string;
   collection_title: string; collection_slug: string; video_url: string;
+  og_key: string;
 }>(
   db,
   `SELECT i.*, sp.name AS speaker_name, sp.slug AS speaker_slug,
@@ -39,6 +40,10 @@ const files = await all<{ id: number; kind: string; title: string; r2_key: strin
 
 const encodeKey = (k: string) => k.split("/").map(encodeURIComponent).join("/");
 const audioUrl = item.r2_key && env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(item.r2_key)}` : null;
+// This sermon's own Open Graph card. NULL og_key falls through to the site
+// default in Base -- better a generic preview than a 404 image.
+const ogImage = item.og_key && env.MEDIA_BASE_URL
+  ? `${env.MEDIA_BASE_URL}/${encodeKey(item.og_key)}` : undefined;
 // Served from the same R2 custom domain as the audio; keys are files/<slug>/<name>.
 const fileUrl = (k: string) => (env.MEDIA_BASE_URL ? `${env.MEDIA_BASE_URL}/${encodeKey(k)}` : null);
 const videoUrl = safeHttpUrl(item.video_url);
@@ -60,7 +65,7 @@ const descParas = item.description ? splitParas(item.description) : [];
 const ogDescription = [item.speaker_name, fmtDate(item.recorded_on), primaryRefs.length ? fmtRef(primaryRefs[0]) : null, CATEGORY_LABEL[item.category]].filter(Boolean).join(" · ");
 const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.recorded_on ? fmtDate(item.recorded_on) : null].filter(Boolean);
 ---
-<Base title={item.title} description={ogDescription || item.title}>
+<Base title={item.title} description={ogDescription || item.title} image={ogImage}>
   <section class="container detail">
     <a href="/" class="muted">← Back to library</a>
     <h1 style="margin-top:8px">{item.title}</h1>
