@@ -99,7 +99,11 @@ const videoCount = (await all<{ n: number }>(
     <div class="pill-line">
       <span class="pill-label">Watch</span>
       <a class={`pill ${!video ? "on" : ""}`} href={linkTo({ video: false })}>All</a>
-      <a class={`pill ${video ? "on" : ""}`} href={linkTo({ video: true })}>Available on YouTube <span class="n">{videoCount}</span></a>
+      <a class={`pill ${video ? "on" : ""}`} href={linkTo({ video: true })}><span class="wide-only">Available on </span>YouTube <span class="n">{videoCount}</span></a>
+      <a class="pill pill-sort" href={linkTo({ sort: sort === "old" ? "" : "old" })}
+         title={sort === "old" ? "Showing oldest first - switch to newest" : "Showing newest first - switch to oldest"}>
+        {sort === "old" ? "↑ Oldest" : "↓ Newest"}
+      </a>
     </div>
 
 
@@ -124,12 +128,7 @@ const videoCount = (await all<{ n: number }>(
         ))}
       </select>
 
-      <label class="pill-label" for="sort">Sort</label>
-      <select id="sort" name="sort" class="filter-select">
-        <option value="">Newest first</option>
-        <option value="old" selected={sort === "old"}>Oldest first</option>
-      </select>
-
+      {sort && <input type="hidden" name="sort" value={sort} />}
       {video && <input type="hidden" name="video" value="1" />}
       {q && <input type="hidden" name="q" value={q} />}
       <button class="btn btn-outline btn-sm" type="submit" data-filter-go>Go</button>
@@ -243,6 +242,13 @@ const videoCount = (await all<{ n: number }>(
   /* An explicit value means the filter is on -- match the active pill. */
   .filter-select:not([data-all]) { color: var(--text); border-color: var(--brand-300); }
   .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
+  /* Sort is binary, so it toggles in place rather than occupying a row. Sized
+     down so it reads as a control on the Watch line, not another filter. */
+  .pill-sort { padding: 4px 10px; font-size: .8rem; margin-left: auto; }
+  /* On a phone the row is tight: drop "Available on" so the sort toggle stays
+     on the same line instead of claiming one of its own. */
+  @media (max-width: 560px) { .wide-only { display: none; } }
+  @media (max-width: 560px) { .pill-sort { margin-left: 0; } }
   .filter-select option { background: var(--bg-card); color: var(--text); }
   .result-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
   .result-bar p { margin: 0; }
