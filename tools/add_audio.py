@@ -183,6 +183,15 @@ def main() -> None:
         run([sys.executable, str(HERE / "attach_transcript.py"), "--slug", a.slug, "--remote"],
             "attach_transcript")
 
+    # An item that just gained audio deserves its own share card too. Non-fatal:
+    # a NULL og_key falls back to the site default, so a failure here costs a
+    # nicer preview, not a working page.
+    print("  generating the Open Graph card ...")
+    if subprocess.run([sys.executable, str(HERE / "make_og.py"), "--slug", a.slug],
+                      cwd=REPO, shell=WIN, env=cf_env(),
+                      capture_output=True, text=True).returncode != 0:
+        print(f"  card step failed -- rerun later: python tools/make_og.py --slug {a.slug}")
+
     print(f"\nDone -> https://teaching.michaelcoughlin.net/listen/{a.slug}")
 
 

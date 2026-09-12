@@ -369,6 +369,17 @@ def main() -> None:
                   f"rerun later:  python tools/attach_transcript.py --slug {slug}"
                   + (" --remote" if remote else ""))
 
+
+    # --- 5) Open Graph card ---------------------------------------------
+    # Without one the sermon shares as the generic archive image. Non-fatal:
+    # a NULL og_key just falls back to the default, so a failure here costs a
+    # nicer preview, not a working page.
+    if remote:
+        print("generating the Open Graph card ...")
+        if subprocess.run([sys.executable, str(HERE / "make_og.py"), "--slug", slug],
+                          cwd=REPO, env=cf_env()).returncode != 0:
+            print(f"  card step failed — rerun later:  python tools/make_og.py --slug {slug}")
+
     base_url = "https://teaching.michaelcoughlin.net" if remote else "http://localhost:4321"
     print(f"\nDone. {base_url}/listen/{slug}")
 

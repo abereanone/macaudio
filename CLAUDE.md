@@ -23,6 +23,7 @@ one being possible.
 | Correct a primary passage | `tools/fix_passage.py` |
 | Audit passages across the catalog | `tools/audit_passages.py` |
 | Copy production into the local dev DB | `tools/sync_local_db.py` |
+| Generate a per-item Open Graph card | `tools/make_og.py --slug SLUG` |
 
 All of them default to **production**; `--local` targets dev D1. Credentials
 come from `.dev.vars` (the token can see several Cloudflare accounts, so tools
@@ -71,3 +72,18 @@ matches looks broken when it is fine.
 Virtual Tables (fts5)"), which is why that tool replays the base tables over the
 query API instead. It never copies `item_fts` -- the 0003_fts_sync triggers own
 it and rebuild it on insert.
+
+## Open Graph cards
+
+Each item has its own share card in `items.og_key` (an R2 key, served from
+`MEDIA_BASE_URL` like `r2_key`). A NULL falls back to `/og-default.png`.
+
+**Stored, never derived.** If the page computed `og/<slug>.png` it would emit a
+URL for items with no card yet, and a 404 image previews worse than the generic
+one -- the same reasoning as `r2_key`.
+
+`add_sermon.py` and `add_audio.py` generate one automatically, so coverage does
+not decay. Cards are 1280x720 and the default is 1200x630; `Base.astro` sends
+the dimensions that match the image it is actually using, because declaring the
+wrong size makes scrapers crop. Regenerate after a title change:
+`tools/make_og.py --slug SLUG --force`.
