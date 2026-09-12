@@ -9,6 +9,7 @@
   --brand-700: #97d9b8;      /* lighter (hover) */
   --brand-300: #2c4a3b;      /* dim green (borders/accents) */
   --accent: #d8a657;         /* warm amber (complements green) */
+  --video: #d98a8a;          /* muted red; see .badge-video */
 
   /* Dark theme (default) — green-tinted near-black */
   --bg: #0b110d;
@@ -33,6 +34,7 @@
   --brand-700: #155c39;
   --brand-300: #6aa98a;
   --accent: #b97e2e;
+  --video: #a94442;
 
   --bg: #ffffff;
   --bg-soft: #f1f6f2;
@@ -113,11 +115,16 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-300);
 .badge-cat { color: var(--accent); border-color: #d8a65755; background: #d8a65714; }
 /* Series position (e.g. which commandment a sermon expounds). */
 .badge-part { color: var(--brand); border-color: var(--brand-300); background: color-mix(in srgb, var(--brand) 10%, transparent); }
-/* Video badge in YouTube red so it reads at a glance down a long list. #C00
-   rather than #F00: this is text and needs 4.5:1 on white, which pure red
-   misses at 4.0:1. Lives here, not in a component, because both row renderers
+/* Video badge. Was solid YouTube red on white, which shouted far louder than
+   the thing deserved -- a row with video was the loudest item on the page. Now
+   tinted like the other badges, still recognisably red, per theme so it keeps
+   contrast on both. Lives here, not in a component, because both row renderers
    (index.astro and ResultRow.astro) use it and Astro scopes component styles. */
-.badge-video { color: #fff; background: #cc0000; border-color: #cc0000; }
+.badge-video {
+  color: var(--video);
+  border-color: color-mix(in srgb, var(--video) 45%, transparent);
+  background: color-mix(in srgb, var(--video) 12%, transparent);
+}
 /* Applied by progress.js from localStorage, so it is per browser. Muted on
    purpose: it marks what is already done, and should not compete with the
    category and series badges. */
