@@ -9,18 +9,21 @@ const q = (params.get("q") ?? "").trim();
 const category = (params.get("category") ?? "").trim();
 const collection = (params.get("collection") ?? "").trim();
 const video = params.get("video") === "1";
+const sort = params.get("sort") === "old" ? "old" : "";
 
 // Pills used to link to "/?category=x", which silently dropped every other
 // filter. With a third row that gets confusing fast, so each pill now keeps the
 // filters it isn't itself changing.
-const linkTo = (over: { category?: string; collection?: string; video?: boolean }) => {
+const linkTo = (over: { category?: string; collection?: string; video?: boolean; sort?: string }) => {
   const next = new URLSearchParams();
   const cat = over.category ?? category;
   const col = over.collection ?? collection;
   const vid = over.video ?? video;
+  const srt = over.sort ?? sort;
   if (cat) next.set("category", cat);
   if (col) next.set("collection", col);
   if (vid) next.set("video", "1");
+  if (srt) next.set("sort", srt);
   if (q) next.set("q", q);
   const s = next.toString();
   return s ? `/?${s}` : "/";
@@ -43,7 +46,12 @@ if (video) { where.push("i.video_url IS NOT NULL"); }
 // into <mark> only after HTML-escaping the text (below), so transcript text can
 // never inject markup.
 const snipExpr = ftsQuery ? "snippet(item_fts, -1, '@@H@@', '@@/H@@', '…', 12)" : "NULL";
-const orderBy = ftsQuery ? "bm25(item_fts)" : "i.recorded_on DESC, i.id DESC";
+// Undated items sort LAST either way. SQLite puts NULLs first on ASC, which
+// otherwise opened "oldest first" with a run of blank dates.
+const dateOrder = sort === "old"
+  ? "(i.recorded_on IS NULL), i.recorded_on ASC, i.id ASC"
+  : "(i.recorded_on IS NULL), i.recorded_on DESC, i.id DESC";
+const orderBy = (ftsQuery && !sort) ? "bm25(item_fts)" : dateOrder;
 
 const items = await all<{
   id: number; slug: string; title: string; category: string; recorded_on: string;
@@ -116,6 +124,12 @@ const videoCount = (await all<{ n: number }>(
         ))}
       </select>
 
+      <label class="pill-label" for="sort">Sort</label>
+      <select id="sort" name="sort" class="filter-select">
+        <option value="">Newest first</option>
+        <option value="old" selected={sort === "old"}>Oldest first</option>
+      </select>
+
       {video && <input type="hidden" name="video" value="1" />}
       {q && <input type="hidden" name="q" value={q} />}
       <button class="btn btn-outline btn-sm" type="submit" data-filter-go>Go</button>
@@ -125,6 +139,7 @@ const videoCount = (await all<{ n: number }>(
       <input type="hidden" name="category" value={category} />
       <input type="hidden" name="collection" value={collection} />
       {video && <input type="hidden" name="video" value="1" />}
+      {sort && <input type="hidden" name="sort" value={sort} />}
       <div class="field-row">
         <div><label for="q">Search</label><input id="q" name="q" value={q} placeholder="Title, passage, or anything said…" /></div>
       </div>
@@ -178,7 +193,12 @@ const videoCount = (await all<{ n: number }>(
       form.querySelectorAll("select").forEach((sel) => {
         const mark = () => sel.toggleAttribute("data-all", sel.value === "");
         mark();
-        sel.addEventListener("change", () => { mark(); form.submit(); });
+        sel.addEventListener("change", () => { mark(); form.requestSubmit(); });
+      });
+      // Empty selects would still be sent, leaving "?category=&collection=&sort=old".
+      // Disabled controls are omitted, so the URL only carries real filters.
+      form.addEventListener("submit", () => {
+        form.querySelectorAll("select").forEach((sel) => { if (!sel.value) sel.disabled = true; });
       });
     })();
   </script>
