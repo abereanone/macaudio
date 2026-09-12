@@ -14,7 +14,7 @@
  */
 (() => {
   const KEY = "macaudio:progress:v1";
-  const HIDE_KEY = "macaudio:hide-listened";
+  const HIDE_KEY = "macaudio:played-filter";   // "" | new | started | done
   const DONE_FRACTION = 0.9;   // far enough in to count, early enough to skip the closing prayer
   const RESUME_MIN = 30;       // don't bother resuming the first few seconds
   const SAVE_EVERY = 8000;     // ms between writes while playing
@@ -161,45 +161,67 @@
     const rows = document.querySelectorAll("[data-slug]");
     if (!rows.length) return;
     const all = load();
-    let listened = 0;
+    let touched = 0;
+
+    const mins = (sec) => {
+      const m = Math.round(sec / 60);
+      return m < 1 ? "under a minute left" : m + (m === 1 ? " min left" : " min left");
+    };
 
     rows.forEach((row) => {
       const rec = all[row.dataset.slug];
-      if (!rec || !rec.done) return;
-      listened++;
-      row.dataset.listened = "1";
-      const tags = row.querySelector(".row-tags");
-      if (tags && !tags.querySelector(".badge-listened")) {
-        const b = document.createElement("span");
-        b.className = "badge badge-listened";
-        b.textContent = "✓ listened";
-        tags.appendChild(b);
+      const done = !!(rec && rec.done);
+      const started = !!(rec && !done && rec.t > 0 && rec.d > 0);
+      row.dataset.state = done ? "done" : started ? "started" : "new";
+      if (!done && !started) return;
+      touched++;
+
+      // bottom-edge line: how far in, or full when finished
+      const pct = done ? 100 : Math.min(99, Math.round((rec.t / rec.d) * 100));
+      let bar = row.querySelector(".row-progress");
+      if (!bar) {
+        bar = document.createElement("span");
+        bar.className = "row-progress";
+        row.appendChild(bar);
+      }
+      bar.style.width = pct + "%";
+
+      // the date slot carries the state -- no extra badge, no extra row
+      const date = row.querySelector("[data-date]");
+      if (date) {
+        if (!date.dataset.original) date.dataset.original = date.textContent;
+        date.textContent = done ? "✓ listened" : mins(rec.d - rec.t);
       }
     });
 
-    const box = document.querySelector("[data-hide-listened]");
-    if (!box) return;
-    // The control ships hidden so a first-time visitor never sees a filter for
-    // something they have none of; it has to be un-hidden once they do.
-    const wrap = box.closest(".hide-listened");
-    if (!listened) { wrap?.setAttribute("hidden", ""); return; }
-    wrap?.removeAttribute("hidden");
+    const sel = document.querySelector("[data-played-filter]");
+    if (!sel) return;
+    if (!touched) { sel.hidden = true; return; }
+    sel.hidden = false;
 
     const countEl = document.querySelector("[data-result-count]");
     const total = rows.length;
     const apply = () => {
-      const hide = box.checked;
-      rows.forEach((r) => { r.hidden = hide && r.dataset.listened === "1"; });
+      const want = sel.value;
+      let shown = 0;
+      rows.forEach((r) => {
+        const hide = want && r.dataset.state !== want;
+        r.hidden = hide;
+        if (!hide) shown++;
+      });
       if (countEl) {
-        const shown = hide ? total - listened : total;
         countEl.textContent = shown + (shown === 1 ? " item" : " items") +
-          (hide ? " · " + listened + " listened hidden" : "");
+          (want && shown !== total ? " of " + total : "");
       }
-      try { localStorage.setItem(HIDE_KEY, hide ? "1" : "0"); } catch {}
+      try { localStorage.setItem(HIDE_KEY, want); } catch {}
     };
 
-    try { box.checked = localStorage.getItem(HIDE_KEY) === "1"; } catch {}
-    box.addEventListener("change", apply);
+    try {
+      const saved = localStorage.getItem(HIDE_KEY) || "";
+      // migrate the old boolean "hide listened" setting
+      sel.value = saved === "1" ? "new" : ["", "new", "started", "done"].includes(saved) ? saved : "";
+    } catch {}
+    sel.addEventListener("change", apply);
     apply();
   }
 

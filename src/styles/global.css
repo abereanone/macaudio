@@ -129,6 +129,16 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-300);
    purpose: it marks what is already done, and should not compete with the
    category and series badges. */
 .badge-listened { color: var(--text-soft); border-color: var(--border); background: transparent; }
+/* Listening progress on a library row. Injected by progress.js, so it must be
+   unscoped -- Astro's component styles are keyed to a data-astro-cid attribute
+   that a runtime-created element does not carry. A 2px line on the card's
+   bottom edge: no layout space, scannable down a column. */
+.row-progress {
+  position: absolute; left: 0; bottom: 0; height: 2px;
+  background: var(--brand); opacity: .6;
+}
+.row[data-state="done"] .row-progress { opacity: .28; }
+.row[data-state="done"] .date { color: var(--brand); opacity: .8; }
 .progress-note { margin: 10px 0 0; font-size: .88rem; color: var(--text-soft); }
 .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--brand); cursor: pointer; text-decoration: underline; }
 
