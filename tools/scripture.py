@@ -38,14 +38,18 @@ _BOOKS: dict[str, list[str]] = {
     "Proverbs": ["prov", "prv", "pr"],
     "Ecclesiastes": ["eccles", "eccl", "ecc", "qoh"],
     "Song of Solomon": ["song", "song of songs", "sos", "canticles"],
-    "Isaiah": ["isa", "is"],
+    # NOTE: "is" was an alias here and the match is case-insensitive, so ordinary
+    # speech indexed as scripture: "2 plus 2 is 4" -> Isaiah 4, "nothing is 100%"
+    # -> Isaiah 100, "is 15 an hour" -> Isaiah 15. "isa" covers the real
+    # abbreviation. Same story for "am" under Amos ("I am 40" -> Amos 40).
+    "Isaiah": ["isa"],
     "Jeremiah": ["jer", "jr"],
     "Lamentations": ["lam"],
     "Ezekiel": ["ezek", "eze"],
     "Daniel": ["dan", "dn"],
     "Hosea": ["hos"],
     "Joel": ["joe", "jl"],
-    "Amos": ["am"],
+    "Amos": ["amo"],
     "Obadiah": ["obad", "ob"],
     "Jonah": ["jon"],
     "Micah": ["mic", "mc"],
@@ -85,6 +89,34 @@ _BOOKS: dict[str, list[str]] = {
 }
 
 CANONICAL_BOOKS: list[str] = list(_BOOKS.keys())
+
+# Chapter count per book. A reference past the end of a book is always a false
+# positive, whatever produced it -- a misread abbreviation, a price, a year --
+# so parse_refs() drops it rather than indexing a chapter that does not exist.
+CHAPTERS: dict[str, int] = {
+    "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36, "Deuteronomy": 34,
+    "Joshua": 24, "Judges": 21, "Ruth": 4, "1 Samuel": 31, "2 Samuel": 24,
+    "1 Kings": 22, "2 Kings": 25, "1 Chronicles": 29, "2 Chronicles": 36,
+    "Ezra": 10, "Nehemiah": 13, "Esther": 10, "Job": 42, "Psalms": 150,
+    "Proverbs": 31, "Ecclesiastes": 12, "Song of Solomon": 8, "Isaiah": 66,
+    "Jeremiah": 52, "Lamentations": 5, "Ezekiel": 48, "Daniel": 12, "Hosea": 14,
+    "Joel": 3, "Amos": 9, "Obadiah": 1, "Jonah": 4, "Micah": 7, "Nahum": 3,
+    "Habakkuk": 3, "Zephaniah": 3, "Haggai": 2, "Zechariah": 14, "Malachi": 4,
+    "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21, "Acts": 28, "Romans": 16,
+    "1 Corinthians": 16, "2 Corinthians": 13, "Galatians": 6, "Ephesians": 6,
+    "Philippians": 4, "Colossians": 4, "1 Thessalonians": 5, "2 Thessalonians": 3,
+    "1 Timothy": 6, "2 Timothy": 4, "Titus": 3, "Philemon": 1, "Hebrews": 13,
+    "James": 5, "1 Peter": 5, "2 Peter": 3, "1 John": 5, "2 John": 1, "3 John": 1,
+    "Jude": 1, "Revelation": 22,
+}
+
+
+def valid_chapter(book: str, chapter: int | None) -> bool:
+    """False when `chapter` is outside the real range for `book`."""
+    if chapter is None:
+        return True
+    top = CHAPTERS.get(book)
+    return chapter >= 1 and (top is None or chapter <= top)
 
 # Build alias -> canonical (longest alias first so "1 cor" beats "cor"-like noise).
 _ALIAS: dict[str, str] = {}
@@ -161,6 +193,11 @@ def parse_refs(text: str, unique: bool = True) -> list[dict]:
             vstart = int(m.group("bvstart"))
             vend = int(m.group("bvend")) if m.group("bvend") else None
         else:
+            continue
+        if not valid_chapter(book, chapter):
+            # e.g. "Isaiah 100" out of "nothing is 100%". Also reset the context
+            # so a following bare "verse 3" is not hung off the bogus chapter.
+            cur_book, cur_chap = None, None
             continue
         key = (book, chapter, vstart, vend)
         if unique and key in seen:
