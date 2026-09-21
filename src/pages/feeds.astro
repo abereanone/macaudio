@@ -8,7 +8,15 @@ const FEED_BASE = "https://feeds-bau.pages.dev";
 
 // Titles and descriptions are copied from each feed's own <channel>, so what a
 // podcast app shows and what this page shows cannot drift apart.
-type Feed = { file: string; title: string; desc: string; n: number };
+// Directory listings. Apple was verified by matching Apple's own feedUrl to the
+// address below (not by title, which matches the wrong show); Spotify by
+// fetching each show and checking the title; Pocket Casts resolved from the
+// Apple id. Five series are listed; the other four are add-by-URL only, and
+// showing them a dead "Spotify" button would be worse than showing none.
+type Feed = {
+  file: string; title: string; desc: string; n: number;
+  apple?: string; spotify?: string; pocket?: string;
+};
 
 const GROUPS: { who: string; note?: string; feeds: Feed[] }[] = [
   {
@@ -17,13 +25,25 @@ const GROUPS: { who: string; note?: string; feeds: Feed[] }[] = [
       { file: "mcassortedsermons.xml", title: "Assorted Sermons", n: 32,
         desc: "Assorted sermons from the Word of God." },
       { file: "dctrip2025.xml", title: "Michael Coughlin Evangelism", n: 26,
-        desc: "Conversations and open-air preaching from a variety of places." },
+        desc: "Conversations and open-air preaching from a variety of places.",
+        apple: "https://podcasts.apple.com/us/podcast/michael-coughlin-evangelism/id1830275334",
+        spotify: "https://open.spotify.com/show/4vP1ap5VrBZCbeFnHquBve",
+        pocket: "https://pocketcasts.com/podcast/michael-coughlin-evangelism/d10e7ea0-1666-013e-983e-0affc5cbe993" },
       { file: "10Commandments.xml", title: "The Ten Commandments", n: 38,
-        desc: "Verse by verse through Exodus 20." },
+        desc: "Verse by verse through Exodus 20.",
+        apple: "https://podcasts.apple.com/us/podcast/the-ten-commandments-michael-coughlin/id1829970448",
+        spotify: "https://open.spotify.com/show/5t0J9TuDFdJKQ54Hocv5ql",
+        pocket: "https://pocketcasts.com/podcast/the-ten-commandments-michael-coughlin/e0242910-cc57-013d-7d91-0affcdcd4ef3" },
       { file: "1Peter.xml", title: "1 Peter Verse by Verse", n: 33,
-        desc: "Verse by verse exposition of 1 Peter." },
+        desc: "Verse by verse exposition of 1 Peter.",
+        apple: "https://podcasts.apple.com/us/podcast/1-peter-verse-by-verse/id1834003107",
+        spotify: "https://open.spotify.com/show/4JbIC11ULnr5Pnx3QGsiPJ",
+        pocket: "https://pocketcasts.com/podcast/1-peter-verse-by-verse/d6cae050-5e9d-013e-b2dc-0ebe3674f0af" },
       { file: "Hebrews.xml", title: "Hebrews — Jesus is Greater", n: 25,
-        desc: "An informal morning Zoom study through Hebrews." },
+        desc: "An informal morning Zoom study through Hebrews.",
+        apple: "https://podcasts.apple.com/us/podcast/hebrews-jesus-is-greater-by-michael-coughlin/id1834228777",
+        spotify: "https://open.spotify.com/show/7f8xFemocVf8r5z3hrZl5B",
+        pocket: "https://pocketcasts.com/podcast/hebrews-jesus-is-greater-by-michael-coughlin/7fdc3ba0-5ff8-013e-365f-02e621eb8afb" },
       { file: "Ps51.xml", title: "Psalm 51 Sermons", n: 9,
         desc: "Verse by verse through Psalm 51." },
       { file: "churchdiscipline.xml", title: "Church Discipline", n: 3,
@@ -31,22 +51,13 @@ const GROUPS: { who: string; note?: string; feeds: Feed[] }[] = [
     ],
   },
   {
-    who: "Tim Pasma",
-    note: "Pastor of LaRue Baptist Church.",
-    feeds: [
-      { file: "lbctp.xml", title: "Tim Pasma Audio", n: 11,
-        desc: "Lectures, Sunday School lessons and sermons at LaRue Baptist Church." },
-      { file: "tphabakkuk.xml", title: "Habakkuk", n: 7,
-        desc: "Verse by verse through Habakkuk." },
-      { file: "tpgenesis.xml", title: "Genesis Verse by Verse", n: 3,
-        desc: "An expository study of Genesis at LaRue Baptist Church." },
-    ],
-  },
-  {
-    who: "Also from LaRue",
+    who: "Also from LaRue Baptist Church",
     feeds: [
       { file: "lbc1John.xml", title: "1 John Sunday School", n: 24,
-        desc: "Sunday School lessons through 1 John at LaRue Baptist Church, 2025." },
+        desc: "Sunday School lessons through 1 John at LaRue Baptist Church, 2025. Taught by Jason Isenbarger, Levi Pasma, Mike Wiseman, Curtis Smith and Michael Coughlin.",
+        apple: "https://podcasts.apple.com/us/podcast/1-john-sunday-school-larue-baptist-church/id1829499573",
+        spotify: "https://open.spotify.com/show/3MKxbMZFWYtCSpFngeRbA1",
+        pocket: "https://pocketcasts.com/podcast/1-john-sunday-school-larue-baptist-church/55812160-4fb5-013e-1064-0affced3611d" },
       { file: "bcsongs.xml", title: "Baptist Catechism Songs", n: 114,
         desc: "The Baptist Catechism arranged and performed as songs by Pastor Jim Scott." },
     ],
@@ -76,10 +87,9 @@ const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 
       {GROUPS.reduce((a, g) => a + g.feeds.length, 0)} feeds.
     </p>
     <p class="muted">
-      These are added by URL rather than found by searching, so they won't come
-      up in Spotify or Apple's directory. Tap a button and your app opens with
-      the feed ready to add, or copy the address into your app's
-      “Add a feed by URL” option.
+      Where a series is in Apple Podcasts or Spotify, the button goes straight
+      to it. Everything else opens your app with the feed ready to add, and the
+      address below each series works in any app's “Add a feed by URL” option.
     </p>
 
     {GROUPS.map((g) => (
@@ -88,20 +98,37 @@ const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 
         {g.note && <p class="muted note">{g.note}</p>}
         {g.feeds.map((f) => (
           <div class="card feed">
-            <div class="feed-head">
-              <h3>{f.title}</h3>
-              <span class="count">{f.n} episodes</span>
-            </div>
-            <p class="desc">{f.desc}</p>
-            <div class="apps">
-              <a class="app" href={apple(f.file)}>Apple Podcasts</a>
-              <a class="app" href={overcast(f.file)}>Overcast</a>
-              <a class="app" href={pocket(f.file)}>Pocket Casts</a>
-              <a class="app plain" href={url(f.file)}>RSS</a>
-            </div>
-            <div class="copy-row">
-              <code class="url" data-url={url(f.file)}>{url(f.file)}</code>
-              <button class="copy" type="button" data-copy={url(f.file)}>Copy</button>
+            <img class="art" src={`/feed-art/${f.file.replace(".xml", "")}.jpg`}
+                 width="72" height="72" loading="lazy" decoding="async" alt="" />
+            <div class="feed-body">
+              <div class="feed-head">
+                <h3>{f.title}</h3>
+                <span class="count">{f.n} episodes</span>
+              </div>
+              <p class="desc">{f.desc}</p>
+
+              {/* Where the show is in a directory, send people to the real
+                  listing -- that is the page they can follow, rate and share.
+                  The URL schemes below are the fallback for everything else. */}
+              {(f.apple || f.spotify || f.pocket) && (
+                <div class="apps">
+                  {f.apple && <a class="app on-apple" href={f.apple} target="_blank" rel="noopener">Apple Podcasts</a>}
+                  {f.spotify && <a class="app on-spotify" href={f.spotify} target="_blank" rel="noopener">Spotify</a>}
+                  {f.pocket && <a class="app on-pocket" href={f.pocket} target="_blank" rel="noopener">Pocket Casts</a>}
+                </div>
+              )}
+
+              <div class="apps second">
+                {!f.apple && <a class="app plain" href={apple(f.file)}>Apple Podcasts</a>}
+                <a class="app plain" href={overcast(f.file)}>Overcast</a>
+                {!f.pocket && <a class="app plain" href={pocket(f.file)}>Pocket Casts</a>}
+                <a class="app plain" href={url(f.file)}>RSS</a>
+              </div>
+
+              <div class="copy-row">
+                <code class="url" data-url={url(f.file)}>{url(f.file)}</code>
+                <button class="copy" type="button" data-copy={url(f.file)}>Copy</button>
+              </div>
             </div>
           </div>
         ))}
@@ -142,7 +169,12 @@ const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 
       font-family: var(--serif); font-size: 1.25rem; margin: 0 0 4px;
       padding-bottom: 6px; border-bottom: 1px solid var(--border);
     }
-    .feed { padding: 16px 18px; margin-top: 14px; }
+    .feed { padding: 16px 18px; margin-top: 14px; display: flex; gap: 14px; align-items: flex-start; }
+    .art {
+      width: 72px; height: 72px; border-radius: 8px; flex: none;
+      object-fit: cover; background: color-mix(in srgb, var(--text) 8%, transparent);
+    }
+    .feed-body { min-width: 0; flex: 1; }
     .feed-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; }
     .feed-head h3 { margin: 0; font-size: 1.05rem; }
     .count { color: var(--text-soft); font-size: .84rem; white-space: nowrap; }
@@ -154,7 +186,17 @@ const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 
       border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
     }
     .app:hover { text-decoration: none; background: color-mix(in srgb, var(--brand) 20%, transparent); }
-    .app.plain { color: var(--text-soft); background: transparent; border-color: var(--border); }
+    .app.plain { color: var(--text-soft); background: transparent; border-color: var(--border); font-weight: 500; }
+    .apps.second { margin-top: 7px; }
+    /* Each directory in its own colour, so the real listings read as the
+       primary action and the add-by-URL row stays quiet underneath. */
+    .on-apple, .on-spotify, .on-pocket { color: #fff; border-color: transparent; }
+    .on-apple { background: #9933cc; }
+    .on-spotify { background: #1db954; }
+    .on-pocket { background: #f43e37; }
+    .on-apple:hover { background: #8a2eb8; }
+    .on-spotify:hover { background: #18a449; }
+    .on-pocket:hover { background: #d9342d; }
     .copy-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
     .url {
       flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap;
