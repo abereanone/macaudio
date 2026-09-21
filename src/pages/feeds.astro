@@ -1,0 +1,173 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Where the XML actually lives. The old links (thingsabove.us/feeds/*.xml) now
+// 404, so everything here points at the Pages deployment that serves them.
+// Change this one constant if the feeds ever move to a custom domain.
+const FEED_BASE = "https://feeds-bau.pages.dev";
+
+// Titles and descriptions are copied from each feed's own <channel>, so what a
+// podcast app shows and what this page shows cannot drift apart.
+type Feed = { file: string; title: string; desc: string; n: number };
+
+const GROUPS: { who: string; note?: string; feeds: Feed[] }[] = [
+  {
+    who: "Michael Coughlin",
+    feeds: [
+      { file: "mcassortedsermons.xml", title: "Assorted Sermons", n: 32,
+        desc: "Assorted sermons from the Word of God." },
+      { file: "dctrip2025.xml", title: "Michael Coughlin Evangelism", n: 26,
+        desc: "Conversations and open-air preaching from a variety of places." },
+      { file: "10Commandments.xml", title: "The Ten Commandments", n: 38,
+        desc: "Verse by verse through Exodus 20." },
+      { file: "1Peter.xml", title: "1 Peter Verse by Verse", n: 33,
+        desc: "Verse by verse exposition of 1 Peter." },
+      { file: "Hebrews.xml", title: "Hebrews — Jesus is Greater", n: 25,
+        desc: "An informal morning Zoom study through Hebrews." },
+      { file: "Ps51.xml", title: "Psalm 51 Sermons", n: 9,
+        desc: "Verse by verse through Psalm 51." },
+      { file: "churchdiscipline.xml", title: "Church Discipline", n: 3,
+        desc: "Sermons on church discipline." },
+    ],
+  },
+  {
+    who: "Tim Pasma",
+    note: "Pastor of LaRue Baptist Church.",
+    feeds: [
+      { file: "lbctp.xml", title: "Tim Pasma Audio", n: 11,
+        desc: "Lectures, Sunday School lessons and sermons at LaRue Baptist Church." },
+      { file: "tphabakkuk.xml", title: "Habakkuk", n: 7,
+        desc: "Verse by verse through Habakkuk." },
+      { file: "tpgenesis.xml", title: "Genesis Verse by Verse", n: 3,
+        desc: "An expository study of Genesis at LaRue Baptist Church." },
+    ],
+  },
+  {
+    who: "Also from LaRue",
+    feeds: [
+      { file: "lbc1John.xml", title: "1 John Sunday School", n: 24,
+        desc: "Sunday School lessons through 1 John at LaRue Baptist Church, 2025." },
+      { file: "bcsongs.xml", title: "Baptist Catechism Songs", n: 114,
+        desc: "The Baptist Catechism arranged and performed as songs by Pastor Jim Scott." },
+    ],
+  },
+];
+
+// Apple and Pocket Casts take the URL in their own scheme; Overcast wants it as
+// a query parameter. None of these are directory listings -- each one simply
+// hands the RSS URL to the app, which is why a feed needs no approval to work.
+const url = (f: string) => `${FEED_BASE}/${f}`;
+const apple = (f: string) => `podcast://${FEED_BASE.replace(/^https:\/\//, "")}/${f}`;
+const overcast = (f: string) => `overcast://x-callback-url/add?url=${encodeURIComponent(url(f))}`;
+const pocket = (f: string) => `pcast://${FEED_BASE.replace(/^https:\/\//, "")}/${f}`;
+
+const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 0);
+---
+
+<Base
+  title="Podcast feeds"
+  description="Subscribe to Michael Coughlin's preaching and teaching in any podcast app — sermon series, evangelism conversations, and studies from LaRue Baptist Church."
+>
+  <section class="section container" style="max-width:820px">
+    <h1>Podcast feeds</h1>
+    <p class="lede">
+      Every series below is a podcast feed you can add to any app. There are
+      {total} episodes across {GROUPS.reduce((a, g) => a + g.feeds.length, 0)} feeds.
+    </p>
+    <p class="muted">
+      These are not listed in Spotify or the Apple directory — you add them by
+      URL. Tap a button and your app opens with the feed ready to add, or copy
+      the address into your app's “Add by URL” option.
+    </p>
+
+    {GROUPS.map((g) => (
+      <div class="group">
+        <h2>{g.who}</h2>
+        {g.note && <p class="muted note">{g.note}</p>}
+        {g.feeds.map((f) => (
+          <div class="card feed">
+            <div class="feed-head">
+              <h3>{f.title}</h3>
+              <span class="count">{f.n} episodes</span>
+            </div>
+            <p class="desc">{f.desc}</p>
+            <div class="apps">
+              <a class="app" href={apple(f.file)}>Apple Podcasts</a>
+              <a class="app" href={overcast(f.file)}>Overcast</a>
+              <a class="app" href={pocket(f.file)}>Pocket Casts</a>
+              <a class="app plain" href={url(f.file)}>RSS</a>
+            </div>
+            <div class="copy-row">
+              <code class="url" data-url={url(f.file)}>{url(f.file)}</code>
+              <button class="copy" type="button" data-copy={url(f.file)}>Copy</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    ))}
+  </section>
+
+  <script>
+    // Progressive enhancement: the address is selectable text without this.
+    document.querySelectorAll<HTMLButtonElement>("button.copy").forEach((b) => {
+      b.addEventListener("click", async () => {
+        const v = b.dataset.copy ?? "";
+        try {
+          await navigator.clipboard.writeText(v);
+          const was = b.textContent;
+          b.textContent = "Copied";
+          b.classList.add("done");
+          setTimeout(() => { b.textContent = was; b.classList.remove("done"); }, 1400);
+        } catch {
+          const c = b.previousElementSibling;
+          if (c) {
+            const r = document.createRange();
+            r.selectNodeContents(c);
+            const s = getSelection();
+            s?.removeAllRanges();
+            s?.addRange(r);
+          }
+        }
+      });
+    });
+  </script>
+
+  <style>
+    .lede { font-size: 1.05rem; }
+    .note { margin: -6px 0 10px; }
+    .group { margin-top: 34px; }
+    .group h2 {
+      font-family: var(--serif); font-size: 1.25rem; margin: 0 0 4px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .feed { padding: 16px 18px; margin-top: 14px; }
+    .feed-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; }
+    .feed-head h3 { margin: 0; font-size: 1.05rem; }
+    .count { color: var(--text-soft); font-size: .84rem; white-space: nowrap; }
+    .desc { margin: 6px 0 12px; color: var(--text-soft); font-size: .94rem; line-height: 1.5; }
+    .apps { display: flex; flex-wrap: wrap; gap: 8px; }
+    .app {
+      font-size: .86rem; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+      color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+    }
+    .app:hover { text-decoration: none; background: color-mix(in srgb, var(--brand) 20%, transparent); }
+    .app.plain { color: var(--text-soft); background: transparent; border-color: var(--border); }
+    .copy-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .url {
+      flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap;
+      font-size: .8rem; padding: 6px 9px; border-radius: 6px;
+      background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text-soft);
+    }
+    .copy {
+      font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+      padding: 6px 12px; border-radius: 6px; white-space: nowrap;
+      color: var(--text-soft); background: transparent; border: 1px solid var(--border);
+    }
+    .copy:hover { color: var(--text); }
+    .copy.done { color: var(--brand); border-color: var(--brand); }
+    @media (max-width: 560px) {
+      .feed-head { flex-direction: column; gap: 2px; }
+    }
+  </style>
+</Base>
