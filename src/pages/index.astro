@@ -55,11 +55,12 @@ const orderBy = (ftsQuery && !sort) ? "bm25(item_fts)" : dateOrder;
 
 const items = await all<{
   id: number; slug: string; title: string; category: string; recorded_on: string;
-  passage_ref: string; series_part: string; speaker_name: string; speaker_slug: string; collection_title: string;
+  passage_ref: string; series_part: string; description: string; speaker_name: string; speaker_slug: string; collection_title: string;
   has_transcript: number; has_video: number; has_files: number; snip: string | null;
 }>(
   db,
   `SELECT i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
+          i.description,
           sp.name AS speaker_name, sp.slug AS speaker_slug, co.title AS collection_title,
           (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript,
           (i.video_url IS NOT NULL) AS has_video,
@@ -177,7 +178,9 @@ const videoCount = (await all<{ n: number }>(
               </div>
               <h3 style="margin:6px 0 2px">{it.title}</h3>
               {it.passage_ref && <span class="passage-tag">{it.passage_ref}</span>}
-              {it.snipHtml && <p class="row-snip" set:html={it.snipHtml} />}
+              {it.snipHtml
+                ? <p class="row-snip" set:html={it.snipHtml} />
+                : it.description && <p class="row-blurb">{it.description}</p>}
               <p class="muted" style="margin:2px 0 0">{it.speaker_name}</p>
             </div>
             <span class="muted date" data-date>{fmtDate(it.recorded_on)}</span>
@@ -228,6 +231,14 @@ const videoCount = (await all<{ n: number }>(
   .row-tags { display: flex; gap: 6px; flex-wrap: wrap; }
   .passage-tag { display: inline-block; font-family: var(--serif); color: var(--brand); font-weight: 600; font-size: .95rem; }
   .row-snip { margin: 6px 0 0; font-size: .9rem; line-height: 1.5; color: var(--text-soft); }
+  /* The hook on a listing row. Clamped so a long description cannot push the
+     rows apart -- during a search the FTS snippet replaces it, being the more
+     relevant text. */
+  .row-blurb {
+    margin: 6px 0 0; font-size: .9rem; line-height: 1.5; color: var(--text-soft);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .row-snip mark { background: color-mix(in srgb, var(--brand) 24%, transparent); color: var(--text); padding: 0 1px; border-radius: 2px; }
   .date { white-space: nowrap; font-size: .88rem; }
   .filter-select {
