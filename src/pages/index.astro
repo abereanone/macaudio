@@ -97,6 +97,17 @@ const videoCount = (await all<{ n: number }>(
   <section class="section container">
     <h1>Browse the library</h1>
 
+    {/* The feeds page is useless if nobody finds it, and "Feeds" in the nav
+        reads as jargon. Say what it does, where people are already browsing. */}
+    <a class="subscribe-cta" href="/feeds">
+      <span class="sc-icon" aria-hidden="true">🎧</span>
+      <span class="sc-text">
+        <strong>Listen in your podcast app</strong>
+        <span class="muted">Subscribe to any series and new messages arrive automatically</span>
+      </span>
+      <span class="sc-go" aria-hidden="true">→</span>
+    </a>
+
     <div class="pill-line">
       <span class="pill-label">Watch</span>
       <a class={`pill ${!video ? "on" : ""}`} href={linkTo({ video: false })}>All</a>
@@ -213,6 +224,20 @@ const videoCount = (await all<{ n: number }>(
 </Base>
 
 <style>
+  .subscribe-cta {
+    display: flex; align-items: center; gap: 12px; margin: 0 0 16px;
+    padding: 12px 14px; border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+    background: color-mix(in srgb, var(--brand) 8%, transparent);
+    color: var(--text);
+  }
+  .subscribe-cta:hover { text-decoration: none; background: color-mix(in srgb, var(--brand) 14%, transparent); }
+  .sc-icon { font-size: 1.3rem; line-height: 1; }
+  .sc-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .sc-text strong { font-size: .97rem; }
+  .sc-text .muted { font-size: .86rem; }
+  .sc-go { margin-left: auto; color: var(--brand); font-weight: 700; }
+  @media (max-width: 560px) { .sc-text .muted { display: none; } }
   .pill-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
   .pill-line:last-of-type { margin-bottom: 18px; }
   .pill-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--text-soft); margin-right: 2px; min-width: 44px; }

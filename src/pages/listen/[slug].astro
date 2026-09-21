@@ -123,6 +123,9 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
         {audioUrl && <a class="btn btn-outline btn-sm" href={audioUrl} download>⤓ Download</a>}
         <button class="btn btn-outline btn-sm" type="button" data-copy={shareUrl}>🔗 Copy link</button>
         <button class="btn btn-outline btn-sm" type="button" data-share={shareUrl} data-title={item.title}>↗ Share</button>
+        {/* Someone who just listened to one message is the likeliest person to
+            want the rest of them automatically. */}
+        {audioUrl && <a class="btn btn-outline btn-sm" href="/feeds">🎧 Subscribe</a>}
       </div>
     </div>
 

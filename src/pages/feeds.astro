@@ -69,15 +69,17 @@ const total = GROUPS.reduce((a, g) => a + g.feeds.reduce((b, f) => b + f.n, 0), 
   description="Subscribe to Michael Coughlin's preaching and teaching in any podcast app — sermon series, evangelism conversations, and studies from LaRue Baptist Church."
 >
   <section class="section container" style="max-width:820px">
-    <h1>Podcast feeds</h1>
+    <h1>Subscribe in your podcast app</h1>
     <p class="lede">
-      Every series below is a podcast feed you can add to any app. There are
-      {total} episodes across {GROUPS.reduce((a, g) => a + g.feeds.length, 0)} feeds.
+      Pick a series and it lands in your podcast app like any other show — new
+      messages download on their own. {total} episodes across
+      {GROUPS.reduce((a, g) => a + g.feeds.length, 0)} feeds.
     </p>
     <p class="muted">
-      These are not listed in Spotify or the Apple directory — you add them by
-      URL. Tap a button and your app opens with the feed ready to add, or copy
-      the address into your app's “Add by URL” option.
+      These are added by URL rather than found by searching, so they won't come
+      up in Spotify or Apple's directory. Tap a button and your app opens with
+      the feed ready to add, or copy the address into your app's
+      “Add a feed by URL” option.
     </p>
 
     {GROUPS.map((g) => (
