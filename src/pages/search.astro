@@ -46,12 +46,12 @@ const verseMode = vLo !== null;
 type Row = {
   id: number; slug: string; title: string; category: string; recorded_on: string;
   passage_ref: string; series_part: string; speaker_name: string; collection_title: string;
-  has_transcript: number; has_video: number; has_files: number; hits: string | null;
+  has_transcript: number; has_video: number; video_url: string | null; has_files: number; hits: string | null;
   primary_precise: number; any_precise: number; any_primary: number;
 };
 
 const ROW_COLS = `i.id, i.slug, i.title, i.category, i.recorded_on, i.passage_ref, i.series_part,
-                  i.description,
+                  i.description, i.video_url,
                   sp.name AS speaker_name, co.title AS collection_title,
                   (SELECT COUNT(*) FROM item_transcripts t WHERE t.item_id = i.id) AS has_transcript,
                   (i.video_url IS NOT NULL) AS has_video,
@@ -202,6 +202,7 @@ const nothingAtAll = q !== "" && confident === 0 && chapterOnly.length === 0;
       <div class="list" style="margin-top:14px">{textResults.map((it) => <ResultRow it={it} />)}</div>
     )}
   </section>
+  <script src="/video-links.js" is:inline defer></script>
 </Base>
 
 <style>

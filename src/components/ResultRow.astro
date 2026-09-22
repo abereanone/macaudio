@@ -9,7 +9,7 @@ interface Props {
     slug: string; title: string; category: string; recorded_on: string;
     passage_ref: string; series_part: string; description?: string; speaker_name: string;
     collection_title: string; has_transcript: number;
-    has_video?: number; has_files?: number;
+    has_video?: number; video_url?: string | null; has_files?: number;
     hits?: string | null; snipHtml?: string;
   };
 }
@@ -24,7 +24,10 @@ const hits = it.hits ? [...new Set(it.hits.split(",").map((h) => h.trim()).filte
       {it.collection_title && <span class="badge">{it.collection_title}</span>}
       {it.series_part && <span class="badge badge-part">{it.series_part}</span>}
       {it.has_transcript ? <span class="badge">📄 transcript</span> : null}
-      {it.has_video ? <span class="badge badge-video">📺 video</span> : null}
+      {it.has_video && it.video_url ? (
+        <span class="badge badge-video" data-video-link data-video-url={it.video_url}
+              role="link" tabindex="0" title="Watch on YouTube">📺 video</span>
+      ) : null}
       {it.has_files ? <span class="badge">📎 handout</span> : null}
     </div>
     <h3 style="margin:6px 0 2px">{it.title}</h3>
