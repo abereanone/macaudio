@@ -29,6 +29,10 @@ All of them default to **production**; `--local` targets dev D1. Credentials
 come from `.dev.vars` (the token can see several Cloudflare accounts, so tools
 must inject `CLOUDFLARE_ACCOUNT_ID` via `cf_env()` or wrangler stops to ask).
 
+The one exception to that default is `attach_extras.py`, which targets **local**
+unless given `--remote`. Forgetting it writes to the dev database and the live
+page does not change.
+
 ## `items.r2_key` is the only source of truth for audio URLs
 
 The page builds `MEDIA_BASE_URL + item.r2_key`; nothing re-derives the path.
@@ -49,13 +53,24 @@ it afterwards with `fix_passage.py`.
 ## Putting sermons on YouTube
 
 In progress. **Read `docs/youtube-pipeline.md` before touching
-`tools/make_video.py` or `tools/make_thumb.mjs`** — it records what is built,
-what was measured, and which decisions are already settled (and why).
+`make_video.py`, `make_montage.py`, `make_captions.py` or `make_thumb.mjs`** —
+it records what is built, what was measured, and which decisions are already
+settled (and why). Several of them were settled after a wrong turn, so the
+reasoning matters more than the conclusion.
 
 | Task | Tool |
 |---|---|
-| Render one item to an upload-ready MP4 + thumbnail | `tools/make_video.py --slug SLUG` |
+| Build the looping background a sermon plays over | `tools/make_montage.py --clips A B C --out .video/loops/SLUG.mp4` |
+| Render one item to an upload-ready MP4 + thumbnail | `tools/make_video.py --slug SLUG --background .video/loops/SLUG.mp4` |
+| Timed subtitles for the upload (**required**) | `tools/make_captions.py --slug SLUG` |
 | Title card / thumbnail on its own | `tools/make_thumb.mjs` |
+| Write the YouTube URL back after uploading | `tools/attach_extras.py --slug SLUG --video URL --remote` |
+
+Those run in that order. `make_video.py` writes a `captions.txt` (plain text,
+no timings) but YouTube's auto-sync keeps refusing it — `captions.srt` from
+`make_captions.py` is the file to upload. Footage is chosen **per sermon**, and
+clips may only share a montage if they measure on the same side of luma 110;
+the doc explains why and how to measure.
 
 Uploads are **manual**, by choice: an unaudited YouTube API project locks every
 upload to private permanently, with no appeal. Do not propose the API uploader

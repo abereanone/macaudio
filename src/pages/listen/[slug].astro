@@ -61,6 +61,20 @@ const seen = new Set(primaryRefs.map(fmtRef));
 const otherRefs = refs.filter((r) => !r.is_primary && !seen.has(fmtRef(r)) && (seen.add(fmtRef(r)), true));
 const splitParas = (s: string) => s.replace(/\r\n?/g, "\n").split(/\n{2,}/).filter((p) => p.trim());
 const transcriptParas = transcript?.text ? splitParas(transcript.text) : [];
+// Diarized transcripts arrive as "Name: said this", one speaker turn per
+// paragraph. Split the label off so it can be styled, and so the drop cap --
+// which would otherwise enlarge the M of "Michael:" -- can be turned off.
+// Second word is not required to be capitalised: an unnamed participant is
+// labelled by role ("Campus official"), not by name.
+const SPEAKER = /^([A-Z][\w.'-]*(?: [\w.'-]+)?): (.*)$/s;
+const turns = transcriptParas.map((p) => {
+  const m = p.match(SPEAKER);
+  return m ? { speaker: m[1], text: m[2] } : { speaker: null, text: p };
+});
+// Only treat it as dialogue when most paragraphs carry a label, so a sermon
+// paragraph that merely opens "Question: ..." is not styled as a speaker turn.
+const isDialogue = turns.filter((t) => t.speaker).length > transcriptParas.length / 2;
+const shown = isDialogue ? turns : transcriptParas.map((text) => ({ speaker: null, text }));
 const descParas = item.description ? splitParas(item.description) : [];
 const ogDescription = [item.speaker_name, fmtDate(item.recorded_on), primaryRefs.length ? fmtRef(primaryRefs[0]) : null, CATEGORY_LABEL[item.category]].filter(Boolean).join(" · ");
 const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.recorded_on ? fmtDate(item.recorded_on) : null].filter(Boolean);
@@ -150,7 +164,9 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
     {transcriptParas.length > 0 && (
       <section class="reading">
         <h2>Transcript</h2>
-        <div class="transcript">{transcriptParas.map((p) => <p>{p}</p>)}</div>
+        <div class={isDialogue ? "transcript dialogue" : "transcript"}>
+          {shown.map((t) => <p>{t.speaker && <b class="spk">{t.speaker}</b>}{t.text}</p>)}
+        </div>
       </section>
     )}
 
@@ -192,6 +208,11 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   .desc-text { padding: 0 16px 14px; max-height: 340px; overflow-y: auto; }
   .desc-text p { margin: 0 0 .7em; line-height: 1.7; color: var(--text-soft); }
   .player { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+  /* Keep the player in view (below the sticky site header) while it's playing. */
+  .player:has(sermon-player[playing]) {
+    position: sticky; top: 63px; z-index: 40;
+    background: var(--bg); padding: 8px 0; box-shadow: 0 6px 8px -6px rgba(0,0,0,.25);
+  }
   .player sermon-player {
     flex: 1 1 280px; min-width: 0;
     --sp-accent: var(--brand); --sp-track: var(--border); --sp-muted: var(--text-soft);
@@ -207,11 +228,6 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
     flex: none; width: 40px; height: 40px; border-radius: 999px;
     display: grid; place-items: center; font-size: 1rem;
     background: var(--brand); color: #07121a;
-  }
-  /* Keep the player in view (below the sticky site header) while it's playing. */
-  .player:has(sermon-player[playing]) {
-    position: sticky; top: 63px; z-index: 40;
-    background: var(--bg); padding: 8px 0; box-shadow: 0 6px 8px -6px rgba(0,0,0,.25);
   }
 
   /* Platform colours. The play badge uses YouTube's true red (#FF0000); it's a
@@ -232,6 +248,10 @@ const metaBits = [CATEGORY_LABEL[item.category], item.collection_title, item.rec
   .reading { margin-top: 28px; }
   .reading h2 { margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .transcript p { margin: 0 0 1.15em; font-size: 1.08rem; line-height: 1.85; }
+  .transcript .spk { color: var(--brand); font-weight: 700; margin-right: .4em; }
+  .transcript .spk::after { content: ":"; }
+  .transcript.dialogue p { margin-bottom: .95em; }
+  .transcript.dialogue p:first-of-type::first-letter { float: none; font-size: inherit; font-family: inherit; line-height: inherit; font-weight: inherit; color: inherit; margin: 0; }
   .transcript p:first-of-type::first-letter { float: left; font-family: var(--serif); font-size: 3.4rem; line-height: .8; font-weight: 700; color: var(--brand); margin: 6px 10px 0 0; }
   .refs-card { margin-top: 26px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }

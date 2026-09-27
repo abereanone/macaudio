@@ -12,6 +12,11 @@ Usage:
   python tools/make_montage.py                 # all clips in .video/source
   python tools/make_montage.py --fade 2.0 --crf 25
   python tools/make_montage.py --out .video/loops/background.mp4
+
+Footage is chosen per sermon, so the usual call names its clips and writes a
+montage keyed to the slug:
+
+  python tools/make_montage.py --slow 2.0       --clips rainy_forest.mp4 butterfly.mov whiteFlowerInBreeze.mov       --out .video/loops/2026-07-13-armor-of-god-part-1.mp4
 """
 from __future__ import annotations
 
@@ -24,6 +29,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO / ".video" / "source"
 W, H, FPS = 1280, 720, 24
+
+# Container is irrelevant: every clip is decoded and re-encoded in pass 1, and
+# audio is dropped. Matched on the suffix rather than by glob so the ordering
+# stays deterministic and the match is case-insensitive on every platform.
+VIDEO_EXTS = {".mp4", ".mov", ".m4v", ".mkv", ".webm"}
 
 
 def probe_duration(path: Path) -> float:
@@ -41,6 +51,11 @@ def run(cmd: list[str], what: str) -> None:
 def main() -> None:
     p = argparse.ArgumentParser(description="Build the shared background montage.")
     p.add_argument("--src", default=str(SRC_DIR))
+    p.add_argument("--clips", nargs="+", default=None, metavar="CLIP",
+                   help="choose the clips explicitly, IN THE ORDER GIVEN, instead of "
+                        "taking everything in --src alphabetically. Bare filenames are "
+                        "resolved against --src. Order is editorial: it is the order "
+                        "the scenes play in.")
     p.add_argument("--out", default=str(REPO / ".video" / "loops" / "background.mp4"))
     p.add_argument("--fade", type=float, default=1.5, help="crossfade seconds")
     p.add_argument("--crf", type=int, default=25)
@@ -51,9 +66,19 @@ def main() -> None:
     a = p.parse_args()
 
     src = Path(a.src)
-    clips = sorted(x for x in src.glob("*.mp4"))
+    if a.clips:
+        clips, missing = [], []
+        for name in a.clips:
+            c = Path(name)
+            if not c.exists():
+                c = src / name
+            (clips if c.exists() else missing).append(c)
+        if missing:
+            sys.exit("No such clip: " + ", ".join(str(m) for m in missing))
+    else:
+        clips = sorted(x for x in src.iterdir() if x.suffix.lower() in VIDEO_EXTS)
     if not clips:
-        sys.exit(f"No .mp4 clips in {src}")
+        sys.exit(f"No video clips in {src}")
     d = a.fade
     durs = [probe_duration(c) * a.slow for c in clips]
     if any(x <= 2 * d for x in durs):
